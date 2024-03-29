@@ -1,0 +1,90 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[slovene]{babel}
+\usepackage{xcolor} \pagecolor[HTML]{1E1E1E} \color[HTML]{FFFFFF}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{physics}
+\usepackage{float}
+
+\pdfinfo{
+  /Title (Fizikalni praktikum; Semester N; Arhetip)
+  /Author (Andraž Sitar)}
+
+\hyphenpenalty=50000
+\newcommand\pkt[1]{\underline{\text{\$ praktikal\_{#1} \$ }}}
+\renewcommand{\vec}{\vb}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\epsilon}{\varepsilon}
+
+\newcommand{\qmarks}[1]{``{#1}''}
+
+\title{Arhetip}
+\author{Andraž Sitar}
+\date{}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\pagebreak
+
+\section{Uvod}
+Teorija ter izpeljave enačb.
+\pagebreak
+\section{Naloge}
+Opombe in razjasnitve pri meritvah. Začetek in konec vnosa in obdelave podatkov označimo z $\backslash$pkt\{eqsb\} in $\backslash$pkt\{eqse\}
+
+Imena spremenljivk so na levi (vključno z enotami), njihova definicija pa na desni strani enačaja. Uvoženih spremenljivk privzeto ni v končni datoteki.
+\pkt{eqsb}
+\begin{eqnarray*}
+	l_{primer}[m]	&=& (100 \pm 1) \cdot 10^{-9} \\
+	a[m]	&=& (\$tab1[a] \pm 0.1) \cdot 10^{-3} \\
+	r_{1}	&=& \$tab2[r_{1}] \pm 0.001 \\
+	r_{2}	&=& \$tab2[r_{2}] \pm 0.001 \\
+	r_{3}	&=& \$tab2[r_{3}] \pm 0.001 \\
+	a_{1}	&=& 2 \cdot a \\
+	b[s]	&=& \$tab1[b] \pm 0.5 \\
+	N	&=& \mathbb{N}^{12} \cdot 10^{3} \\
+	M	&=& \$tab1[M] \\
+\end{eqnarray*}
+\pkt{eqse}
+Kot vrednost opazimo vektor, ki predstavlja zaporedne meritve, število ob tropičju pa predstavlja število meritev, ki niso prikazane.
+\\
+
+Uvožene spremenljivke pa lahko vidimo v tej tabeli.
+\pkt{tab}{$ l_{primer} \& a \& b \& a_{sest} \& N \& M $}
+
+\pagebreak
+Bolj nazorno je meritve ter izračune prikazati na grafu.
+\pkt{fig}{$a \{ a \& a_{1} \} / b$; error=true; leg=true; fit=lin; title=-||-,ter,dodaten,opis}
+Grafu odvisnosti spremenljivk lahko spreminjamo nastavitve, nekatere izmed njih so že uporabljene. 
+
+\pagebreak
+Lahko narišemo tudi histogram.
+\pkt{fig}{$\{r_{1} \& r_{2} \& r_{3} \} \sim ?$; nBins=20; dens=true; leg=true; type=bar; stacked=true; title=-||-,ter,dodaten,opis}
+
+
+\pagebreak
+Sledijo enačbe, izpeljane v uvodu.
+\pkt{eqsb}
+\begin{eqnarray*}
+	a_{sest}	&=& a \oplus a_{1} \\
+	K_{izm}	&=& \derivative{(a)}{b} \\
+	\\
+	r_{1,avg}	&=& \overline{r_{1}} \\
+	s_{1}	&=& \sigma_{r_{1}} \\
+	r_{2,avg}	&=& \overline{r_{2}} \\
+	s_{2}	&=& \sigma_{r_{2}} \\
+	r_{3,avg}	&=& \overline{r_{3}} \\
+	s_{3}	&=& \sigma_{r_{3}} \\
+\end{eqnarray*}
+\pkt{eqse}
+Vidimo, da so pri izračunih enote količin ustrezne. Program preveri različne kombinacije enot ter sešteje potence posameznih enot v ulomku (ali produktu) ter izbere tisto, katere vsota potenc je najmanjša. Zato morda izbere neustrezen, krajši zapis enote. Sestavljene enote lahko definiramo v \qmarks{configu}.
+
+\pagebreak
+\section{Povzetek}
+Kratek povzetek poteka meritev, primerjava rezultatov s kolegi po Svetu, npr. $K_{izm} = \pkt{ref}{K_{izm}}$, kar vidimo na sliki (\ref{fig:plot_a;b}) (ime oznake najdemo v izhodnem dokumentu), ter komentar rezultatov.
+
+\end{document}

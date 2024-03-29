@@ -1,0 +1,111 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[slovene]{babel}
+\usepackage{xcolor} \pagecolor[HTML]{1E1E1E} \color[HTML]{FFFFFF}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{physics}
+\usepackage{float}
+
+\pdfinfo{
+  /Title (Fizikalni praktikum; Semester N; Arhetip)
+  /Author (Andraž Sitar)}
+
+\hyphenpenalty=50000
+\newcommand\pkt[1]{\underline{\text{\$ praktikal\_{#1} \$ }}}
+\renewcommand{\vec}{\vb}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\epsilon}{\varepsilon}
+
+\newcommand{\qmarks}[1]{``{#1}''}
+
+\title{Arhetip}
+\author{Andraž Sitar}
+\date{}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\pagebreak
+
+\section{Uvod}
+Teorija ter izpeljave enačb.
+\pagebreak
+\section{Naloge}
+Opombe in razjasnitve pri meritvah. Začetek in konec vnosa in obdelave podatkov označimo z $\backslash$pkt\{eqsb\} in $\backslash$pkt\{eqse\}
+
+Imena spremenljivk so na levi (vključno z enotami), njihova definicija pa na desni strani enačaja. Uvoženih spremenljivk privzeto ni v končni datoteki.
+\begin{eqnarray*}
+	l_{primer}	 =  \left(100 \pm 1\right) \cdot 10^{-9} \ \mathrm{m}&=& \left( 100 \pm 1 \right) \cdot 10^{-9}\ \mathrm{m}\\ 
+	a_{1}	 =  2 \cdot a &=& \left( \begin{bmatrix}1,8 \\3 \\\vdots\ (4) \\\end{bmatrix} \pm 0,2 \right) \cdot 10^{-3}\ \mathrm{m}\\ 
+	N	 =  \mathbb{N}^{12} \cdot 10^{3} &=& \begin{bmatrix}1 \\2 \\\vdots\ (10) \\\end{bmatrix} \cdot 10^{3}\\ 
+\end{eqnarray*}
+Kot vrednost opazimo vektor, ki predstavlja zaporedne meritve, število ob tropičju pa predstavlja število meritev, ki niso prikazane.
+\\
+
+Uvožene spremenljivke pa lahko vidimo v tej tabeli.
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+$l_{primer}\left[ 10^{-9}\ \mathrm{m}\right]$  & $a\left[ 10^{-6}\ \mathrm{m}\right]$  & $b\left[\mathrm{s}\right]$  & $a_{sest}\left[ 10^{-6}\right]$  & $N\left[ 10^{3}\right]$  & $M\left[ 10^{3}\right]$  \\ \hline
+$100 \pm 1$ & $800 \pm 100$ & $1 \pm 0.5$ & $800 \pm 100$ & $1$ & $5.342$ \\
+  & $1000 \pm 100$ & $2 \pm 0.5$ & $1000 \pm 100$ & $2$ & $0.378$ \\
+  & $1000 \pm 100$ & $3 \pm 0.5$ & $1000 \pm 100$ & $3$ & $92.784$ \\
+  & $2000 \pm 100$ & $4 \pm 0.5$ & $2000 \pm 100$ & $4$ & $4.828$ \\
+  & $3000 \pm 100$ & $5 \pm 0.5$ & $3000 \pm 100$ & $5$ & $3.799$ \\
+  & $3000  \pm 100$ & $6  \pm 0.5$ & $3000 \pm 100$ & $6$ & $894839.347 $ \\
+  &   &   & $1000 \pm 200$ & $7$ &   \\
+  &   &   & $3000 \pm 200$ & $8$ &   \\
+  &   &   & $3000 \pm 200$ & $9$ &   \\
+  &   &   & $5000 \pm 200$ & $10$ &   \\
+  &   &   & $6000 \pm 200$ & $11$ &   \\
+  &   &   & $6000  \pm 200 $ & $12 $ &   \\ \hline
+\end{tabular} 
+\label{table:{l_{primer};a;b;a_{sest};N;M}}
+\end{table}
+
+\pagebreak
+Bolj nazorno je meritve ter izračune prikazati na grafu.
+\begin{figure}[H]
+	\begin{center}
+		\includegraphics{plot_a;b}
+	\caption{Graf $a$ v odvisnosti od $b$ ter dodaten opis}
+	\label{fig:plot_a;b}
+	\end{center}
+\end{figure}
+Grafu odvisnosti spremenljivk lahko spreminjamo nastavitve, nekatere izmed njih so že uporabljene. 
+
+\pagebreak
+Lahko narišemo tudi histogram.
+\begin{figure}[H]
+	\begin{center}
+		\includegraphics{hist_r_{1};r_{2};r_{3}}
+	\caption{Verjetnostna porazdelitev $r_{1}, r_{2}, r_{3}, $ ter dodaten opis}
+	\label{fig:hist_r_{1};r_{2};r_{3}}
+	\end{center}
+\end{figure}
+
+
+\pagebreak
+Sledijo enačbe, izpeljane v uvodu.
+\begin{eqnarray*}
+	a_{sest}	 =  a \oplus a_{1} &=& \left( \begin{bmatrix}900 \\1000 \\\vdots\ (10) \\\end{bmatrix} \pm \begin{bmatrix}100 \\100 \\\vdots\ (10) \\\end{bmatrix} \right) \cdot 10^{-6}\\ 
+	K_{izm}	 =  \derivative{\left(a\right)}{b} &=& \left( 510 \pm 30 \right) \cdot 10^{-6}\ \frac{\mathrm{m}}{\mathrm{s}}\\ 
+	\\
+	r_{1,avg}	 =  \overline{r_{1}} &=& \left( 10 \pm 10 \right) \cdot 10^{-3}\\ 
+	s_{1}	 =  \sigma_{r_{1}} &=& \left( 300 \pm 10 \right) \cdot 10^{-3}\\ 
+	r_{2,avg}	 =  \overline{r_{2}} &=& 2 \pm 0,02\\ 
+	s_{2}	 =  \sigma_{r_{2}} &=& \left( 510 \pm 20 \right) \cdot 10^{-3}\\ 
+	r_{3,avg}	 =  \overline{r_{3}} &=& 4 \pm 0,04\\ 
+	s_{3}	 =  \sigma_{r_{3}} &=& \left( 810 \pm 30 \right) \cdot 10^{-3}\\ 
+\end{eqnarray*}
+Vidimo, da so pri izračunih enote količin ustrezne. Program preveri različne kombinacije enot ter sešteje potence posameznih enot v ulomku (ali produktu) ter izbere tisto, katere vsota potenc je najmanjša. Zato morda izbere neustrezen, krajši zapis enote. Sestavljene enote lahko definiramo v \qmarks{configu}.
+
+\pagebreak
+\section{Povzetek}
+Kratek povzetek poteka meritev, primerjava rezultatov s kolegi po Svetu, npr. $K_{izm} = \left( 510 \pm 30 \right) \cdot 10^{-6}\ \frac{\mathrm{m}}{\mathrm{s}}$, kar vidimo na sliki (\ref{fig:plot_a;b}) (ime oznake najdemo v izhodnem dokumentu), ter komentar rezultatov.
+
+\end{document}
