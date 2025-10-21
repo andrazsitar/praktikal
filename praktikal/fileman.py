@@ -1,10 +1,11 @@
 
 import numpy as np
+import copy
 import matplotlib.pyplot as plt
-import os
 from praktikal.sysdat import *
-from praktikal.numunc import Nu, getLinFit
-from praktikal.conf import config
+from praktikal.numunc import Nu, Stat, getLinFit, ln
+from praktikal.conf import config as config_main
+config = getConfig(config_main)
 
 plt.rcParams['text.usetex'] = config["pltUseTeX"]
 fExtDef = f'.{config["fileExtensionDefault"].lstrip(".")}'
@@ -30,6 +31,17 @@ pltRenParams = {
     'legend.labelcolor':renConf["renColCont"],
     'legend.facecolor':renConf["renColOut"],
     'legend.edgecolor':renConf["renColOut"]
+}
+
+strColors = {
+    'r': (240,0,0),
+    'g': (0,220,0),
+    'b': (0,0,220),
+    'c': (0,240,240),
+    'm': (240,0,240),
+    'y': (240,240,0),
+    'k': (0,0,0),
+    'w': (240,240,240)
 }
 
 def fixEqParentheses(s_):
@@ -96,35 +108,37 @@ def dataGet(filename, dattype="e_lx", encod="utf-8"):
             lines_ctxt = []
             lineType = "oth"
             for x in lines_all:
+                xStrip = x.lstrip('\t').lstrip(' ')
+                bComment = len(xStrip) > 0 and x.lstrip('\t').lstrip(' ')[0] == '%'
                 if "\\pkt{eqse}" in x:
                     if lineType == "eqt":
                         lineType = "oth"
                     else:
-                        raise SyntaxError(f"Praktikal Signifier for Equations End found in line, marked as [{lineType}]")
-                if lineType == "eqt" and not "%" in x and "=" in x:
+                        raise SyntaxError(f"Praktikal Signifier for Equations to End found in line, marked as [{lineType}]")
+                if lineType == "eqt" and not bComment and "=" in x:
                     lines_ctxt.append(("eqt", fixEqParentheses(x)))
                     continue
                 if "\\pkt{eqsb}" in x:
                     if lineType == "oth":
                         lineType = "eqt"
                     else:
-                        raise SyntaxError(f"Praktikal Signifier for Equations Begin found in line, marked as [{lineType}]")
+                        raise SyntaxError(f"Praktikal Signifier for Equations to Begin found in line, marked as [{lineType}]")
                 
-                if "\\pkt{fig}" in x and not "%" in x:
+                if "\\pkt{fig}" in x and not bComment:
                     if lineType == "oth":
                         lines_ctxt.append(("fig", x))
                         continue
                     else:
                         raise SyntaxError(f"Praktikal Signifier for Figure found in line, marked as [{lineType}]")
                 
-                if "\\pkt{tab}" in x and not "%" in x:
+                if "\\pkt{tab}" in x and not bComment:
                     if lineType == "oth":
                         lines_ctxt.append(("tab", x))
                         continue
                     else:
                         raise SyntaxError(f"Praktikal Signifier for Table found in line, marked as [{lineType}]")
                     
-                if "%" in x:
+                if bComment:
                     lines_ctxt.append(("cmt", x))
                     continue
                 lines_ctxt.append(("oth", x))
@@ -142,7 +156,7 @@ def dataGet(filename, dattype="e_lx", encod="utf-8"):
                     boolSkipLine = True
                 if boolSkipLine:
                     continue
-                x[0] = x[0].lstrip("\t").replace("\\\\", "\\\\\\ ").replace("\\ ", "").replace(" ", "").replace("&", "").rstrip("\\nonumber").rstrip("\\\\")
+                x[0] = x[0].lstrip("\t").replace("\\\\", "\\\\\\ ").replace("\\ ", "").replace(" ", "").replace("&", "").rstrip("\\nonumber").rstrip(" ").rstrip("\\\\")
             
             a = x[0].split("=")
             key = a[0].rstrip("\\\\").rstrip("\t ")
@@ -276,97 +290,195 @@ def write(ob, filename=None, wmode=""):
             wPrintLogToTerminal(lstResW, filename, fExtDef)
         return
 
-def plot(figType, dict_vals, inp_x, inp_y, figSize='(6,4)', fl=None, slc=slice(0, None, 1), plotType='pkt_default', eBar=False, fit='', nBins=10, bDensity=True, bStackedHist=False, bFillHist=False, leg=False, grid=False):
+def plot(figType, dict_vals, inp_x, inp_y, figSize='(6,4)', subplots=((0,0),), xRange=None, yRange=None, xscale='linear', yscale='linear', fl=None, slc=slice(0, None, 1), plotTypes='pkt_default', error=None, fit='', nBins=10, bHistLog=False, bDensity=True, bStackedHist=False, bFillHist=False, leg=False, grid=False, col=None):
     # check if enabled
     if config['pltSkipPlotting']:
         return
+    
+    if not "." in fl:
+        fl += ".pdf"
     
     # colour interp
     def hex_to_rgb(value):
         value = value.lstrip('#')
         lv = len(value)
         return np.array(list(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3)))
-
+    
     def rgb_to_hex(rgb):
-        rgb_tup = (int(rgb[0]), int(rgb[1]), int(rgb[2]))
+        rgb_tup = tuple(int(comp) for comp in rgb)
         return '#%02x%02x%02x' % rgb_tup
     
-    main_rgb = hex_to_rgb(renConf["renColPlotMain"])
-    cont_rgb = hex_to_rgb(renConf["renColPlotContrast"])
+    # main_rgb_def = hex_to_rgb(renConf["renColPlotMain"])
+    # cont_rgb_def = hex_to_rgb(renConf["renColPlotContrast"])
+    list_rgb_def = [hex_to_rgb(hex) for hex in renConf["renColPlotList"]]
+    if len(list_rgb_def) < 2:
+        raise ValueError(f'Setting "renColPlotList" should be of length [2] or more, not [{len(list_rgb_def)}]')
     
-    if not "." in fl:
-        fl += ".pdf"
+    def getColor(i, col=None):
+        # main_rgb, cont_rgb, list_rgb_interp = main_rgb_def, cont_rgb_def, list_rgb_def
+        list_rgb_interp = list_rgb_def
+        # main_rgb = list_rgb_interp[0]
+        # cont_rgb = list_rgb_interp[1]
+        list_hex_exact = []
+        list_interp_final = [j for j in range(numDataSets)]
+        if type(col) == tuple:
+            if col[0] == 'list':
+                _, cols = col
+                if np.prod([type(c) == int for c in cols]): # ali so vse barve cela števila
+                    M = np.max(cols)
+                    if M == 0:
+                        list_interp_final =[0 for c in cols]
+                    else:
+                        list_interp_final = [c / M for c in cols]
+                elif np.prod([type(c) in (int, float) for c in cols]): # ali so vse barve vsaj realna števila
+                    list_interp_final = [c for c in cols]
+                elif np.prod([type(c) == str for c in cols]): # ali so vse barve vsaj nizi
+                    for c in cols:
+                        list_hex_exact.append(rgb_to_hex(strColors[c]))
+        elif col == None:
+            list_interp_final = [j / (numDataSets - 1 * (numDataSets > 1)) for j in range(numDataSets)]
+        else:
+            raise ValueError(f'Invalid color set: [{col}]')
+        
+        if list_hex_exact == []:
+            if numDataSets > 1:
+                f_interp = list_interp_final[i]
+                # get proper interpolation interval
+                idx_interp_interval = int(( f_interp * (len(list_rgb_interp) - 1) ) // 1)
+                f_interp_in_interval = ( f_interp * (len(list_rgb_interp) - 1) ) % 1
+                # print()
+                # print(f_interp)
+                # print(idx_interp_interval, f_interp_in_interval)
+
+                # get proper colors
+                rgb0 = list_rgb_interp[idx_interp_interval]
+                rgb1 = list_rgb_interp[idx_interp_interval + (f_interp_in_interval != 0)]
+                # print(rgb0, rgb1)
+
+
+                # rgb_return = (rgb0 * (1 - f_interp_in_interval) + rgb1 * f_interp_in_interval) // 1
+                rgb_return = ((np.sqrt(rgb0 / 256) * (1 - f_interp_in_interval) + np.sqrt(rgb1 / 256) * f_interp_in_interval) ** 2) * 256 // 1
+                return rgb_to_hex(rgb_return)
+            else:
+                return rgb_to_hex(list_rgb_interp[0])
+        return list_hex_exact[i]
 
     if figType == 'lineChart':
-        if plotType == 'pkt_default':
-            plotType = 'scatter'
+        if plotTypes == 'pkt_default':
+            plotTypes = 'o'
+            # plotTypes = 'scatter'
 
         inp_x_parent, inp_x_children = inp_x
         inp_y_parent, inp_y_children = inp_y
 
         numDataSets = len(inp_y_children)
         if len(inp_x_children) != 1 and len(inp_x_children) != numDataSets:
-            raise ValueError(f'Plot can have {len(inp_y_children)} sets of y-values dependent on {len(inp_y_children)} or 1 set of x-values, not on {len(inp_x_children)} sets')
+            raise ValueError(f'Plot can have {len(inp_y_children)} sets of y-values dependent on {len(inp_y_children)} or 1 set of x-values, not on {len(inp_x_children)} sets.')
+        if type(plotTypes) == list and len(plotTypes) != 1 and len(plotTypes) != numDataSets:
+            raise ValueError(f'Plot can have {len(inp_y_children)} sets of y-values plotted with {len(inp_y_children)} or 1 plot type, not with {len(plotTypes)} plot types.')
     elif figType == 'histogram':
-        if plotType == 'pkt_default':
-            plotType = 'bar'
+        if plotTypes == 'pkt_default':
+            plotTypes = 'bar'
 
-        inp_x_children = inp_x
-        inp_y_children = None
+        inp_y_children = inp_y
+        inp_x_children = None
 
-        numDataSets = len(inp_x_children)
+        numDataSets = len(inp_y_children)
+        if type(plotTypes) == list:
+            raise NotImplementedError(f'Histogram can only have a single plot type.')
     else:
         raise ValueError(f'Invalid figure type: [{figType}]')
+    
+    # subplots_len = (1,1)
+    # if subplots != ((0,0),):
+    #     xIdxExtr, yIdxExtr = [np.inf,-np.inf], [np.inf,-np.inf]
+    #     xSetIdx, ySetIdx = set(), set()
+    #     for tup in subplots:
+    #         xIdx, yIdx = tup
+    #         xSetIdx.add(xIdx)
+    #         ySetIdx.add(yIdx)
+    #         if xIdx < xIdxExtr[0]:
+    #             xIdxExtr[0] = xIdx
+    #         if xIdx > xIdxExtr[1]:
+    #             xIdxExtr[1] = xIdx
+    #         if yIdx < yIdxExtr[0]:
+    #             yIdxExtr[0] = yIdx
+    #         if yIdx > yIdxExtr[1]:
+    #             yIdxExtr[1] = yIdx
+    #     if not xIdxExtr[0] == 0:
+    #         raise ValueError(f'Smallest subplot x-index needs to be [1], not [{xIdxExtr[0] + 1}]')
+    #     if not yIdxExtr[0] == 0:
+    #         raise ValueError(f'Smallest subplot y-index needs to be [1], not [{xIdxExtr[0] + 1}]')
+    #     subplots_len = (xIdxExtr[1]+1, yIdxExtr[1]+1)
+    #     for i in range(subplots_len[0]):
+    #         if i not in xSetIdx:
+    #             raise ValueError(f'All subplot x-indices from [1] to [{subplots_len[0]}] need to be represented - index [{i+1}] not represented.')
+    #     for i in range(subplots_len[1]):
+    #         if i not in ySetIdx:
+    #             raise ValueError(f'All subplot y-indices from [1] to [{subplots_len[1]}] need to be represented - index [{i+1}] not represented.')
+    # else:
+    #     subplots = numDataSets * subplots[0]
+    
+    # def getSubplotIdx(i):
+    #     print(i, subplots)
+    #     xIdx, yIdx = subplots[i]
+    #     if subplots_len[0] == 1:
+    #         return yIdx
+    #     if subplots_len[1] == 1:
+    #         return xIdx
+    #     return xIdx, yIdx
 
     with plt.rc_context(pltRenParams):
         # printc(key_x)
         plt.clf()
 
         sizeX, sizeY = figSize[1:-1].replace(' ','').split(',')
+        # fig, axs = plt.subplots(ncols=subplots_len[0], nrows=subplots_len[1])
         plt.figure(figsize=(float(sizeX), float(sizeY)))
         
         # dirty implementation - gets units ipd. from first element
-        if True:
-            try:
-                x_full = dict_vals[inp_x_children[0]][0].peek()
-            except:
-                raise KeyError(f'Independent variable in plot [{inp_y_children[0]} / {inp_x_children[0]}] is undefined.')
-            
-            unit_x = str(x_full.unit)
-            unit_x += (unit_x == '')*'\\ /'
-        
         if figType == 'lineChart':
             try:
                 y_full = dict_vals[inp_y_children[0]][0].peek()
             except:
                 raise KeyError(f'Dependent variable in plot [{inp_y_children[0]} / {inp_x_children[0]}] is undefined.')
+            try:
+                x_full = dict_vals[inp_x_children[0]][0].peek()
+            except:
+                raise KeyError(f'Independent variable in plot [{inp_y_children[0]} / {inp_x_children[0]}] is undefined.')
             
             unit_y = str(y_full.unit)
             unit_y += (unit_y == '')*'\\ /'
+            
+            unit_x = str(x_full.unit)
+            unit_x += (unit_x == '')*'\\ /'
         elif figType == 'histogram':
+            try:
+                y_full = dict_vals[inp_y_children[0]][0].peek()
+            except:
+                raise KeyError(f'Dependent variable in plot [{inp_y_children[0]} / {inp_x_children[0]}] is undefined.')
             unit_y = '\\ /'
+            
+            unit_x = str(y_full.unit)
+            unit_x += (unit_x == '')*'\\ /'
 
-        ax = plt.axes()
-        ax.set_facecolor(renConf["renColIn"])
+        axes = plt.axes()
+        axes.set_facecolor(renConf["renColIn"])
         
-        usd_if_tex = ''
-        if config["pltUseTeX"]:
-            usd_if_tex = "$"
+        usd_if_tex = config["pltUseTeX"] * "$"
         # plt.xlabel(f"{usd_if_tex}{inp_x}\\left[{unit_x[2:]}\\right]{usd_if_tex}", color=renConf["renColX"])
         if figType == 'lineChart':
             plt.xlabel(f"{usd_if_tex}{inp_x_parent}\\left[{unit_x[2:]}\\right]{usd_if_tex}", color=renConf["renColX"])
             plt.ylabel(f"{usd_if_tex}{inp_y_parent}\\left[{unit_y[2:]}\\right]{usd_if_tex}", color=renConf["renColY"])
         elif figType == 'histogram':
-            # plt.xlabel(f"{usd_if_tex}{inp_x_parent}\\left[{unit_x[2:]}\\right]{usd_if_tex}", color=renConf["renColX"])
-            plt.xlabel(f"{usd_if_tex}{inp_x[0]}\\left[{unit_x[2:]}\\right]{usd_if_tex}", color=renConf["renColX"])
+            plt.xlabel(f"{usd_if_tex}{inp_x}\\left[{unit_x[2:]}\\right]{usd_if_tex}", color=renConf["renColX"])
             if bDensity:
                 plt.ylabel(f"{usd_if_tex}\\rho\\left[{unit_y[2:]}\\right]{usd_if_tex}", color=renConf["renColY"])
             else:
                 plt.ylabel(f"{usd_if_tex}N\\left[{unit_y[2:]}\\right]{usd_if_tex}", color=renConf["renColY"])
         
-        x_full = []
-        y_full = []
-        lenMin = np.infty
+        x = []
+        y = []
         if figType == 'lineChart':
             for i in range(len(inp_y_children)):
                 inp_x_child = inp_x_children[i * (len(inp_x_children) != 1)]
@@ -379,53 +491,54 @@ def plot(figType, dict_vals, inp_x, inp_y, figSize='(6,4)', fl=None, slc=slice(0
                     y_full_child = dict_vals[inp_y_child][0].peek()
                 except:
                     raise KeyError(f'Dependent variable in plot [{inp_y_child} / {inp_x_child}] is undefined.')
-                x_full.append(x_full_child)
-                y_full.append(y_full_child)
-
-                if len(x_full_child) < lenMin:
-                    lenMin = len(x_full_child)
-                if len(y_full_child) < lenMin:
-                    lenMin = len(y_full_child)
                 
-            x_new = []
-            y_new = []
-            for i in range(len(x_full)):
-                x_full_child = x_full[i]
-                y_full_child = y_full[i]
+                # match lengths
+                lenMin = np.min((len(x_full_child), len(y_full_child)))
 
                 x_trim = x_full_child[:lenMin]
                 x_trim.fxt()
                 y_trim = y_full_child[:lenMin]
                 y_trim.fxt()
 
-                x_new.append(x_trim[slc])
-                y_new.append(y_trim[slc])
-            x = x_new
-            y = y_new
+                x.append(x_trim[slc])
+                y.append(y_trim[slc])
         
         elif figType == 'histogram':
-            for i in range(len(inp_x_children)):
-                inp_x_child = inp_x_children[i]
+            # raise NotImplementedError('TODO: match lengths')
+            for i in range(len(inp_y_children)):
+                inp_y_child = inp_y_children[i]
                 try:
-                    x_full_child = dict_vals[inp_x_child][0].peek()
+                    y_full_child = dict_vals[inp_y_child][0].peek()
                 except:
-                    raise KeyError(f'Random variable [{inp_x_child}] in histogram is undefined.')
-                x_full.append(x_full_child)
+                    raise KeyError(f'Random variable [{inp_y_child}] in histogram is undefined.')
+            #     x_full.append(x_full_child)
 
-                if len(x_full_child) < lenMin:
-                    lenMin = len(x_full_child)
+            #     if len(x_full_child) < lenMin:
+            #         lenMin = len(x_full_child)
                 
-            x_new = []
-            for i in range(len(x_full)):
-                x_full_child = x_full[i]
+            # x_new = []
+            # for i in range(len(x_full)):
+            #     x_full_child = x_full[i]
 
-                x_trim = x_full_child[:lenMin]
-                x_trim.fxt()
+            #     x_trim = x_full_child[:lenMin]
+            #     x_trim.fxt()
 
-                x_new.append(x_trim[slc])
-            x = x_new
+            #     x_new.append(x_trim[slc])
+            # x = x_new
+
+                # match lengths
+                lenMin = len(y_full_child)
+            
+                y_trim = y_full_child[:lenMin]
+                y_trim.fxt()
+                
+                y.append(y_trim[slc])
         
         if figType == 'lineChart':
+            if xRange != None:
+                plt.xlim(*xRange)
+            if yRange != None:
+                plt.ylim(*yRange)
             for i in range(numDataSets):
                 x_child = x[i * (len(inp_x_children) != 1)]
                 y_child = y[i]
@@ -434,64 +547,87 @@ def plot(figType, dict_vals, inp_x, inp_y, figSize='(6,4)', fl=None, slc=slice(0
                 x_child += 0
                 y_child += 0
 
+                # spIdx = getSubplotIdx(i)
+
                 # scatterSize = 10
                 # if len(x_child.val) > 128:
                 #     scatterSize = 6
                 # if len(x_child.val) > 256:
                 #     scatterSize = 2
-                scatterSize = 32 * (1.08 - np.tanh(0.01*len(x_child.val)))
-                
-                # colour interp
-                if numDataSets > 1:
-                    renCol = rgb_to_hex((main_rgb * (1 - (i / (numDataSets - 1))) + cont_rgb * (i / (numDataSets - 1))) // 1)
+                scatterSize = 16
+                if config['pltScaleScatter']:
+                    scatterSize = 32 * (1.08 - np.tanh(0.01*len(x_child.val)))
+
+                if type(plotTypes) == str:
+                    plotType = plotTypes
+                elif type(plotTypes) == list:
+                    plotType = plotTypes[i]
                 else:
-                    renCol = rgb_to_hex(main_rgb)
+                    raise ValueError(f'Plot type for line chart can be type [str] or [list], not [{type(plotTypes)}]')
+                
+                # color interp
+                renCol=getColor(i, col)
 
                 if fit == 'lin':
                     fit_k, fit_n = getLinFit(x_child, y_child)
-                    func_lin_fit = np.poly1d((fit_k.val, fit_n.val))
+                    func_fit = np.poly1d((fit_k.val, fit_n.val))
+                if fit == 'const':
+                    fit_n = Stat.avg(y_child)
+                    func_fit = np.poly1d((0, fit_n.val))
+                if fit == 'exp':
+                    fit_k, fit_n = getLinFit(x_child, ln(y_child))
+                    func_fit = lambda var: np.exp(fit_n.val + fit_k.val * var)
                 
                 lbl = None
                 if leg:
                     lbl = f'${inp_y_child}$'
-                if plotType[:1] == 'o':
-                    if eBar:
-                        plt.errorbar(x_child.val, y_child.val, xerr=x_child.unc, yerr=y_child.unc, fmt ='none', ecolor=renCol, capsize=2, capthick=0.5, label=lbl)
-                        # printc(f"Plot label: $\\frac{{d {key_y}}}{{d {key_x}}} = {f_m[1]}$")
+                if plotType[0] == 'o':
+                    if error == 'bar':
+                        plt.errorbar(x_child.val, y_child.val, xerr=x_child.unc, yerr=y_child.unc, fmt ='none', ecolor=renCol, elinewidth=1, capsize=2, capthick=0.5, label=lbl)
+                        plt.plot(x_child.val, y_child.val, plotType, c=renCol, alpha=1)
+                    elif error == 'band':
+                        plt.plot(x_child.val, y_child.val - y_child.unc, ':', c=renCol, alpha=1)
+                        plt.plot(x_child.val, y_child.val + y_child.unc, ':', c=renCol, alpha=1)
+                        plt.fill_between(x_child.val, y_child.val - y_child.unc, y_child.val + y_child.unc, color=renCol, alpha=0.2)
+                        plt.plot(x_child.val, y_child.val, plotType, c=renCol, alpha=1, label=lbl)
                     else:
                         # stops double labeling in case of type == 'o--'
                         if plotType == 'o':
-                            plt.scatter(x_child.val, y_child.val, c=renCol, alpha=0.6, s=scatterSize, label=lbl)
+                            plt.scatter(x_child.val, y_child.val, c=renCol, alpha=1, s=scatterSize, label=lbl)
                         else:
-                            plt.scatter(x_child.val, y_child.val, c=renCol, alpha=0.6, s=scatterSize)
+                            plt.scatter(x_child.val, y_child.val, c=renCol, alpha=1, s=scatterSize)
                         
                     if len(plotType) > 1:
-                        plt.plot(x_child.val, y_child.val, plotType[1:], c=renCol, alpha=0.6, label=lbl)
+                        plt.plot(x_child.val, y_child.val, plotType[1:], c=renCol, alpha=1, label=lbl)
                 else:
-                    plt.plot(x_child.val, y_child.val, plotType, c=renCol, alpha=0.6, label=lbl)
+                    plt.plot(x_child.val, y_child.val, plotType, c=renCol, alpha=1, label=lbl)
 
-                if fit == 'lin':
+                if fit in ('lin', 'const', 'exp'):
                     # fit lines
-                    plt.plot(x_child.val, func_lin_fit(x_child.val), "--", color=renCol)
-                    # plt.plot(x_child.val, func_lin_fit(x_child.val), "-", color=renConf["renColPlotMain"], label=f"$\\textrm{{cov}} \\left( {inp_x_child}, {inp_y_child}\\right)$")
+                    plt.plot(x_child.val, func_fit(x_child.val), config['pltFitStyle'], color=renCol)
+                    # plt.plot(x_child.val, func_fit(x_child.val), "-", color=renConf["renColPlotMain"], label=f"$\\textrm{{cov}} \\left( {inp_x_child}, {inp_y_child}\\right)$")
+            plt.xscale(xscale)
+            plt.yscale(yscale)
         
         elif figType == 'histogram':
             renCol = []
             lbl = []
+            if type(plotTypes) == str:
+                plotType = plotTypes
+            else:
+                raise ValueError(f'Plot type for histogram can be type [str], not [{type(plotTypes)}]')
             if fit == 'pkt_default':
                 raise NotImplementedError('Histogram fit is not yet implemented')
             for i in range(numDataSets):
                 # colour interp
-                if numDataSets > 1:
-                    renCol.append(rgb_to_hex((main_rgb * (1 - (i / (numDataSets - 1))) + cont_rgb * (i / (numDataSets - 1))) // 1))
-                else:
-                    renCol.append(rgb_to_hex(main_rgb))
+                # renCol = getColor(i, col)
+                renCol.append(getColor(i, col))
                 
                 if leg:
-                    lbl.append(f'${inp_x_children[i]}$')
+                    lbl.append(f'${inp_y_children[i]}$')
                 else:
                     lbl.append(None)
-            plt.hist([x_.val for x_ in x], nBins, density=bDensity, histtype=plotType, stacked=bStackedHist, fill=bFillHist, color=renCol, label=lbl)
+            plt.hist([y_.val for y_ in y], nBins, density=bDensity, histtype=plotType, stacked=bStackedHist, fill=bFillHist, log=bHistLog, color=renCol, label=lbl)
 
         if leg:
             # if f_m[1] < 0:
@@ -509,6 +645,7 @@ def plot(figType, dict_vals, inp_x, inp_y, figSize='(6,4)', fl=None, slc=slice(0
             # printc(f"Plotted Graph:\t\t\t{key_y} ({key_x})")
             plt.show()
         else:
+            plt.tight_layout()
             plt.savefig(f"{(fl)}")
             # printc(f"Plotted Graph:\t\t\t{key_y} ({key_x}) as [{fl+ext}]")
     plt.close()

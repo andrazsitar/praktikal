@@ -6,10 +6,12 @@ import traceback
 import time
 from datetime import datetime
 from praktikal.sysdat import *
-from praktikal.conf import config
-from praktikal.numunc import Nu, Nu_unit, Trig, Stat, Vect, ln, getUnits, strNuFormat
+from praktikal.conf import config as config_main
+from praktikal.numunc import Nu, Nu_unit, Trig, Stat, Tens, ln, getUnits, strNuFormat
 from praktikal.fileman import dataGet, isFloat, write, plot
+config = getConfig(config_main)
 
+# special letters that exist only in this form
 setLettSpec = set((
     'alpha',
     'beta',
@@ -21,6 +23,7 @@ setLettSpec = set((
     'mu',
     'nu',
     'rho',
+    'sigma',
     'tau',
     'zeta',
     'digamma',
@@ -33,9 +36,12 @@ setLettSpec = set((
     'aleph',
     'beth',
     'daleth',
-    'gimel'
+    'gimel',
+    'varE',
+    'hbar'
 ))
 
+# special letters that also exist in uppercase
 setLettSpecCap = set((
     'delta',
     'gamma',
@@ -48,6 +54,17 @@ setLettSpecCap = set((
     'theta',
     'upsilon',
     'xi'
+))
+
+setLettAccents = set((
+    'mathcal',
+    'mathfrak',
+    'hat',
+    'widehat',
+    'tilde',
+    'widetilde',
+    'acute',
+    'grave'
 ))
 
 fExtDef = f'.{config["fileExtensionDefault"].lstrip(".")}'
@@ -84,6 +101,9 @@ class Ps:
         return self.items[-1]
 
     def size(self):
+        return len(self.items)
+
+    def __len__(self):
         return len(self.items)
     
     def __str__(self):
@@ -122,31 +142,36 @@ def getLxFloatOrRef(st):
     return st1 + '\\left[' + parenth + '\\right]'
 
 def isOperator(x, bGetOperandNum=False):
+    # za bGetOperandNum=False vrne ali je x operator
+    # za bGetOperandNum=True v primeru, da je x operator, vrne število argumentov operatorja x
+    # v tej funkciji je treba (dvakrat!) "registrirati" vsak nov operator
     if type(x) == str:
-        listX = x.split('.')
+        listX = x.split('.') # razdeli po "." za lažje tolmačenje
         if bGetOperandNum:
             if listX[0] == 'v' and listX[1] == 'prCartProd':
                 return listX[2] + 1
             if (
-                x in ['+', '-', '*', '/', '^', 'log'] or
-                listX[0] == 's' and listX[1] == 'fitlin' or
-                listX[0] == 'v' and listX[1] in ['cnc', 'arange']
+                x in ['+', '-', '\\pm', '*', '/', '^', 'log'] or
+                listX[0] == 's' and listX[1] in ['fitlin', 'sdvW'] or
+                listX[0] == 'v' and listX[1] in ['slc', 'cnc', 'arange']
             ):
                 return 2
             elif (
                 x in ['~', 'abs', 'ln'] or 
-                listX[0] == 't' and listX[1].lstrip('a') in ['sin', 'cos', 'tan', 'cot'] or
-                listX[0] == 's' and listX[1] in ['avg', 'sdv'] or
-                listX[0] == 'v' and listX[1] == 'dim'
+                len(listX) >= 2 and (
+                    listX[0] == 't' and listX[1].lstrip('a') in ['sin', 'cos', 'tan', 'cot'] or
+                    listX[0] == 's' and listX[1] in ['avg', 'sdv', 'max', 'min'] or
+                    listX[0] == 'v' and listX[1] in ['val', 'unc', 'dim', 'sum']
+                )
             ):
                 return 1
             return 0
-    
+        # bGetOperandNum == False
         return (
-            x in ['~', 'abs', 'ln', '+', '-', '*', '/', '^', 'log'] or
-            listX[0] == 't' and listX[1].lstrip('a') in ['sin', 'cos', 'tan', 'cot'] or
-            listX[0] == 's' and listX[1] in ['avg', 'sdv', 'fitlin'] or
-            listX[0] == 'v' and listX[1] in ['dim', 'cnc', 'arange']
+            x in ['~', 'abs', 'ln', '+', '-', '\\pm', '*', '/', '^', 'log'] or
+            len(listX) > 1 and listX[0] == 't' and listX[1].lstrip('a') in ['sin', 'cos', 'tan', 'cot'] or
+            len(listX) > 1 and listX[0] == 's' and listX[1].rstrip('W') in ['avg', 'sdv', 'max', 'min', 'fitlin'] or
+            len(listX) > 1 and listX[0] == 'v' and listX[1] in ['val', 'unc', 'dim', 'sum', 'slc', 'cnc', 'arange']
         )
     return False
 
@@ -162,7 +187,8 @@ def toNuArg(s, dattype='lx'):
         s0 = s.split('[')
         # printcommented(dataGet(s0[0][1:], 't_dt')[s0[1][:-1]])
         return dataGet(s0[0][len('$'):], 't_dt')[s0[1][:-len(']')]]
-    if dattype == 'lx' and s[0:2] == '\\$' and not '\pm' in s:
+    # if dattype == 'lx' and s[0:2] == '\\$' and not '\pm' in s:
+    if dattype == 'lx' and s[0:2] == '\\$':
         strFilename, strKey = s.split('\\left[')
         # len('\\$') == 2
         # len('\\right]') ==
@@ -175,7 +201,6 @@ def toNuArg(s, dattype='lx'):
 def getValStackElem(stack, dic):
     # gets value of stack element with pop()
     y = stack.pop()
-    # printcommented('y', y)
     if type(y) == Nu:
         return y
     elif type(y) in [float, np.float64, int, np.ndarray]:
@@ -183,7 +208,10 @@ def getValStackElem(stack, dic):
     elif type(dic) == type(None):
         raise Exception(LookupError, 'Dictionary not given')
     # kle j pointer, ne sme bit (zaenkat je samo spremenu vrsto negotovosti)
-    return dic[y][0].peek()
+    try:
+        return dic[y][0].peek()
+    except:
+        return y
 
 def evalStack(stack, dict=None, setIndep=None, key=None, dictDebugOriginal=None):
     # evaluates expression, represented by stack
@@ -210,7 +238,6 @@ def evalStack(stack, dict=None, setIndep=None, key=None, dictDebugOriginal=None)
                 stackUneval = dictDebugOriginal[key][0]
             raise SyntaxError(f'Unevalueable Stack: [{key}]: {stackUneval}')
         
-        # printcommented(stackE)
         if isOperator(lastElem):
             if stackE.peek() == '~':
                 stackE.pop()
@@ -238,6 +265,15 @@ def evalStack(stack, dict=None, setIndep=None, key=None, dictDebugOriginal=None)
                 b = getValStackElem(stackE, dict)
                 a = getValStackElem(stackE, dict)
                 stackE.push(a - b)
+            
+            if type(stackE.peek()) == str and stackE.peek() == '\\pm':
+                stackE.pop()
+                b = getValStackElem(stackE, dict)
+                a = getValStackElem(stackE, dict)
+                try:
+                    stackE.push(Nu(a.val, b.val))
+                except:
+                    raise ValueError('One of the variables in operation +- is not of type [Nu]')
             
             if type(stackE.peek()) == str and stackE.peek() == '*':
                 stackE.pop()
@@ -267,6 +303,7 @@ def evalStack(stack, dict=None, setIndep=None, key=None, dictDebugOriginal=None)
             #     b = getValStackElem(stackE, dict)
             #     a = getValStackElem(stackE, dict)
             #     stackE.push(logNu(b, a))
+            # # logaritem z drugačno osnovo - odstranjeno
             
             if type(stackE.peek()) == str and stackE.peek()[:2] == 't.':
                 if stackE.peek()[2:] == 'sin':
@@ -318,6 +355,7 @@ def evalStack(stack, dict=None, setIndep=None, key=None, dictDebugOriginal=None)
                     continue
             
             if type(stackE.peek()) == str and stackE.peek()[:2] == 's.':
+                bWeighed = stackE.peek()[-1] == 'W'
                 if stackE.peek()[2:] == 'avg':
                     stackE.pop()
                     a = getValStackElem(stackE, dict)
@@ -335,40 +373,76 @@ def evalStack(stack, dict=None, setIndep=None, key=None, dictDebugOriginal=None)
                     try:
                         stackE.push(Stat.fitlin(a, b)[0])
                     except:
-                        raise ValueError(f'Unable to fit [{a}] and [{b}] either having all NaN data points')
+                        raise ValueError(f'Unable to fit [{a}] and [{b}] with either having all NaN data points')
                     
-                if type(stackE.peek()) == str and stackE.peek()[2:] == 'sdv':
+                if type(stackE.peek()) == str and stackE.peek()[2:5] == 'sdv':
+                    stackE.pop()
+                    if bWeighed:
+                        w = getValStackElem(stackE, dict)
+                    a = getValStackElem(stackE, dict)
+                    if bWeighed:
+                        stackE.push(Stat.sdv(a, w))
+                    else:
+                        stackE.push(Stat.sdv(a))
+                    
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'max':
                     stackE.pop()
                     a = getValStackElem(stackE, dict)
-                    stackE.push(Stat.sdv(a))
-        
-            if type(stackE.peek()) == str and stackE.peek()[:2] == 'v.':
-                if stackE.peek()[2:] == 'cnc':
+                    stackE.push(Stat.max(a))
+                    
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'min':
                     stackE.pop()
-                    b = getValStackElem(stackE, dict)
                     a = getValStackElem(stackE, dict)
-                    stackE.push(Vect.cnc(a, b))
+                    stackE.push(Stat.min(a))
 
-                if stackE.peek()[2:] == 'dim':
+            if type(stackE.peek()) == str and stackE.peek()[:2] == 'v.':
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'slc':
+                    stackE.pop()
+                    b = stackE.pop()
+                    a = getValStackElem(stackE, dict)
+                    stackE.push(Tens.slc(a, b))
+
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'cnc':
                     stackE.pop()
                     b = getValStackElem(stackE, dict)
                     a = getValStackElem(stackE, dict)
-                    stackE.push(Vect.dim(a, b))
+                    stackE.push(Tens.cnc(a, b))
+
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'val':
+                    stackE.pop()
+                    a = getValStackElem(stackE, dict)
+                    stackE.push(Nu(a.val))
+
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'unc':
+                    stackE.pop()
+                    a = getValStackElem(stackE, dict)
+                    a.fxt()
+                    stackE.push(Nu(a.unc))
+
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'dim':
+                    stackE.pop()
+                    a = getValStackElem(stackE, dict)
+                    stackE.push(Tens.dim(a))
+
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'sum':
+                    stackE.pop()
+                    a = getValStackElem(stackE, dict)
+                    stackE.push(a.sum())
                 
-                if stackE.peek()[2:] == 'arange':
+                if type(stackE.peek()) == str and stackE.peek()[2:] == 'arange':
                     stackE.pop()
                     b = getValStackElem(stackE, dict)
                     a = getValStackElem(stackE, dict)
-                    stackE.push(Vect.arange(a, b))
+                    stackE.push(Tens.arange(a, b))
                 
-                if stackE.peek()[2:12] == 'prCartProd':
+                if type(stackE.peek()) == str and stackE.peek()[2:12] == 'prCartProd':
                     numElem = int(stackE.peek()[13:])
                     stackE.pop()
                     paramProjIdx = getValStackElem(stackE, dict)
                     listElem = []
                     for _ in range(numElem):
                         listElem.append(getValStackElem(stackE, dict))
-                    stackE.push(Vect.prCartProd(paramProjIdx, listElem))
+                    stackE.push(Tens.prCartProd(paramProjIdx, listElem))
         
         else:
             # var is another var
@@ -490,8 +564,14 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
     # converts [praktial PS or] LaTeX string to praktial PS stack-set pair
     # function appends data onto existing stack-set pair
     if not unit.unitless():
+        # v izraz doda enote, da jih primnoži
+        unitDict = unit.dic
+        unitDict[None] = unitDict.get(None, 1) # privzeti multiplikator je 1
+        unitNoMult = Nu_unit(Nu_unit.dictNoMult(unitDict))
+        # print('unit:', unitDict)
         stack0.push('*')
-        stack0.push(Nu(1, 0, unit=unit))
+        stack0.push(Nu(unitDict[None], 0, unit=unitNoMult)) # morda je multiplikator ravno obraten
+        # stack0.push(Nu(unit.dic[None], 0, unit=unit))
 
     if type(expr) != str:
         raise TypeError(f'Expression is not type {str}, instead: {type(expr)}')
@@ -621,11 +701,44 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
                 idxMulWODot = lenStrFunc + lenStrParamSubscript + lenStrParamSuperscript + lenStrParams
                 if idxMulWODot == len(expr):
                     if strFunc == 'fitlin':
+                        print('Fitlin is deprecated, instead use \\derivative')
                         numParams = len(listParamsSemicolon)
                         if numParams != 2:
                             raise SyntaxError(f'Function [{strFunc}] needs 2 parameters, not {numParams}: {listParamsSemicolon}')
                         stack0.push('s.fitlin')
                         strToStack(listParamsSemicolon[1], stack0, varSet0, dattype, reverse)
+                        strToStack(listParamsSemicolon[0], stack0, varSet0, dattype, reverse)
+                        return
+                    
+                    if strFunc == 'max':
+                        numParams = len(listParamsSemicolon)
+                        if numParams != 1:
+                            raise SyntaxError(f'Function [{strFunc}] needs 1 parameter, not {numParams}: {listParamsSemicolon}')
+                        stack0.push('s.max')
+                        strToStack(listParamsSemicolon[0], stack0, varSet0, dattype, reverse)
+                        return
+                    
+                    if strFunc == 'min':
+                        numParams = len(listParamsSemicolon)
+                        if numParams != 1:
+                            raise SyntaxError(f'Function [{strFunc}] needs 1 parameter, not {numParams}: {listParamsSemicolon}')
+                        stack0.push('s.min')
+                        strToStack(listParamsSemicolon[0], stack0, varSet0, dattype, reverse)
+                        return
+                    
+                    if strFunc == 'val':
+                        numParams = len(listParamsSemicolon)
+                        if numParams != 1:
+                            raise SyntaxError(f'Function [{strFunc}] needs 1 parameter, not {numParams}: {listParamsSemicolon}')
+                        stack0.push('v.val')
+                        strToStack(listParamsSemicolon[0], stack0, varSet0, dattype, reverse)
+                        return
+                    
+                    if strFunc == 'unc':
+                        numParams = len(listParamsSemicolon)
+                        if numParams != 1:
+                            raise SyntaxError(f'Function [{strFunc}] needs 1 parameter, not {numParams}: {listParamsSemicolon}')
+                        stack0.push('v.unc')
                         strToStack(listParamsSemicolon[0], stack0, varSet0, dattype, reverse)
                         return
                     
@@ -713,6 +826,16 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
                     strToStack(a, stack0, varSet0, dattype, reverse)
                     return
             
+            if expr[1:4] == 'exp':
+                a = lxRFindPar(expr, '\\left(', '\\right)', True)
+                # len('\\log\\left(\\right)') == 17
+                idxMulWODot = len(a) + 17
+                if idxMulWODot == len(expr):
+                    stack0.push('^')
+                    strToStack(a, stack0, varSet0, dattype, reverse)
+                    stack0.push(Nu(np.e))
+                    return
+            
             if expr[1:4] == 'log':
                 if expr[4] == '_':
                     if expr[5] != '{':
@@ -737,7 +860,42 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
                     stack0.push('ln')
                     strToStack(a, stack0, varSet0, dattype, reverse)
                     return
+            
+            if expr[1:3] == 'ln':
+                a = lxRFindPar(expr, '\\left(', '\\right)', True)
+                # len('\\ln\\left(\\right)') == 16
+                idxMulWODot = len(a) + 16
+                if idxMulWODot == len(expr):
+                    stack0.push('ln')
+                    strToStack(a, stack0, varSet0, dattype, reverse)
+                    return
+            
+            if expr[1:4] == 'abs':
+                a = lxRFindPar(expr, '{', '}', True)
+                # len('\\abs{}') == 6
+                idxMulWODot = len(a) + 6
+                if idxMulWODot == len(expr):
+                    stack0.push('abs')
+                    strToStack(a, stack0, varSet0, dattype, reverse)
+                    return
 
+            # if expr[1:3] == 'dv' or expr[1:11] == 'derivative':
+            #     if expr[1:3] == 'dv':
+            #         L = 2
+            #     else:
+            #         L = 10
+                    
+            #     # len('derivative') == 10
+            #     a = lxRFindPar(expr, '{', '}', True)
+            #     b = lxRFindPar(expr[len(a) + L + 3:], '{', '}', True)
+            #     # len('\\derivative{}') == 13
+            #     # len('\\derivative{}{}') == 15
+            #     idxMulWODot = len(a) + len(b) + L + 5
+            #     if idxMulWODot == len(expr):
+            #         stack0.push('s.fitlin')
+            #         strToStack(a, stack0, varSet0, dattype, reverse)
+            #         strToStack(b, stack0, varSet0, dattype, reverse)
+            #         return
             if expr[1:11] == 'derivative':
                 # len('derivative') == 10
                 a = lxRFindPar(expr, '{', '}', True)
@@ -861,24 +1019,45 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
                     strToStack(a, stack0, varSet0, dattype, reverse)
                     return
             
-            if expr[1:7] == 'sigma_':
-                if expr[7] != '{':
-                    raise SyntaxError(f'Expression {expr} needs "{{}}" after "_".')
-                a = lxRFindPar(expr, '{', '}', True)
-                # len('\\sigma_{})') == 9
-                idxMulWODot = len(a) + 9
+            # if expr[1:7] == 'sigma_':
+            #     if expr[7] != '{':
+            #         raise SyntaxError(f'Expression {expr} needs "{{}}" after "_".')
+            #     a = lxRFindPar(expr, '{', '}', True)
+            #     # len('\\sigma_{})') == 9
+            #     idxMulWODot = len(a) + 9
+            #     if idxMulWODot == len(expr):
+            #         stack0.push(config['latexInterpFuncSigma'])
+            #         strToStack(a, stack0, varSet0, dattype, reverse)
+            #         return
+                
+            if expr[1:6] == 'sigma' and expr[6:12] == '\\left(':
+                # if expr[6:12] != '\\left(':
+                #     raise SyntaxError(f'Expression {expr} needs "()".')
+                a = lxRFindPar(expr, '\\left(', '\\right)', True)
+                # len('\\sigma_{})') == 19
+                listParamsSemicolon = a.split(';')
+                idxMulWODot = len(a) + 19
                 if idxMulWODot == len(expr):
-                    stack0.push(config['latexInterpFuncSigma'])
+                    if len(listParamsSemicolon) <= 2:
+                        if len(listParamsSemicolon) == 1:
+                            stack0.push(config['latexInterpFuncSigma'][1])
+                            strToStack(a, stack0, varSet0, dattype, reverse)
+                        else:
+                            stack0.push(config['latexInterpFuncSigma'][2])
+                            strToStack(listParamsSemicolon[1], stack0, varSet0, dattype, reverse)
+                            strToStack(listParamsSemicolon[0], stack0, varSet0, dattype, reverse)
+                    return
+                
+            if expr[1:6] == 'Sigma':
+                if expr[6:12] != '\\left(':
+                    raise SyntaxError(f'Expression {expr} needs "()".')
+                a = lxRFindPar(expr, '\\left(', '\\right)', True)
+                # len('\\sigma_{})') == 19
+                idxMulWODot = len(a) + 19
+                if idxMulWODot == len(expr):
+                    stack0.push('v.sum')
                     strToStack(a, stack0, varSet0, dattype, reverse)
                     return
-                # zna probleme delat, nevem
-                # # len('^{2}') == 4
-                # if expr[idxMulWODot:idxMulWODot+4] == '^{2}':
-                #     idxMulWODot += 4
-                #     if idxMulWODot == len(expr):
-                #         stack0.push('s.var')
-                #         strToStack(a, stack0, varSet0, dattype, reverse)
-                #         return
 
         # expr is not parentheses or function with parentheses
 
@@ -886,6 +1065,9 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
             return
 
         if strToStackInfix(expr, stack0, varSet0, ['+', '-'], 'lx', True):
+            return
+        
+        if strToStackInfix(expr, stack0, varSet0, ['\\pm'], 'lx', True):
             return
         
         if strToStackInfix(expr, stack0, varSet0, ['\\cdot'], 'lx', True):
@@ -898,30 +1080,49 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
             if a == expr:
                 stack0.push(Nu(toNuArg(expr)))
                 return
-            if expr[idxMulWODot:idxMulWODot+3] == '\\pm':
-                b = getLxFloatOrRef(expr[idxMulWODot+3:])
-                if idxMulWODot + len(b) + 3 == len(expr):
-                    stack0.push(Nu(toNuArg(a, 'lx'), toNuArg(b, 'lx')))
-                    return
+            # if expr[idxMulWODot:idxMulWODot+3] == '\\pm':
+            #     b = getLxFloatOrRef(expr[idxMulWODot+3:])
+            #     if idxMulWODot + len(b) + 3 == len(expr):
+            #         stack0.push(Nu(toNuArg(a, 'lx'), toNuArg(b, 'lx')))
+            #         return
         
         if idxMulWODot == 0:
             idxMulWODot = 1
             if expr[0] == '\\':
+                # modficirane latinične črke
+                for x in setLettAccents:
+                    if expr[1:2+len(x)] == x + '{' and expr[3+len(x)] == '}' and expr[2+len(x)].isalpha() and expr[2+len(x)].isupper():
+                        idxMulWODot = 4 + len(x)
+                # mali alfabet
                 for x in setLettSpec:
                     if expr[1:1+len(x)] == x:
                         idxMulWODot = 1 + len(x)
+                # veliki alfabet
                 for x in setLettSpecCap:
                     # if expr[1:1+len(x)] == x:
                     if expr[1:1+len(x)].capitalize() == x.capitalize():
                         idxMulWODot = 1 + len(x)
+
             expr_tr = expr[idxMulWODot:]
             boolFoundLetterTrail = True
             while boolFoundLetterTrail:
                 boolFoundLetterTrail = False
+
                 if len(expr_tr) >= 1 and expr_tr[0] == "'":
                     boolFoundLetterTrail = True
                     idxMulWODot += 1
                     expr_tr = expr[idxMulWODot:]
+
+                if len(expr_tr) >= 4 and expr_tr[0:4] == "^{*}":
+                    boolFoundLetterTrail = True
+                    idxMulWODot += 4
+                    expr_tr = expr[idxMulWODot:]
+
+                if len(expr_tr) >= 2 and expr_tr[0:2] == "^*": # tu je zapis brez oklepaja dovoljen
+                    boolFoundLetterTrail = True
+                    idxMulWODot += 2
+                    expr_tr = expr[idxMulWODot:]
+
                 if len(expr_tr) >= 1 and expr_tr[0] == '_':
                     if expr_tr[1] != '{':
                         raise SyntaxError(f'Expression {expr} needs "{{}}" after "_".')
@@ -953,6 +1154,18 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
                 strToStack(b, stack0, varSet0, dattype, reverse)
                 strToStack(a, stack0, varSet0, dattype, reverse)
                 return
+            
+        if expr[idxMulWODot] == '\\' and expr[idxMulWODot:idxMulWODot + 6] == '\\left[':
+            a = expr[:idxMulWODot]
+            # len('\\left[\\right]') == 13
+            b = lxRFindPar(expr[idxMulWODot:], '\\left[', '\\right]', True)
+            idxMulWODot += len(b) + 13
+            if idxMulWODot == len(expr):
+                stack0.push('v.slc')
+                # strToStack(b, stack0, varSet0, dattype, reverse)
+                stack0.push(b)
+                strToStack(a, stack0, varSet0, dattype, reverse)
+                return
         
         stack0.push('*')
         strToStack(expr[idxMulWODot:], stack0, varSet0, dattype, reverse)
@@ -961,16 +1174,15 @@ def strToStack(expr, stack0=Ps, varSet0=set(), dattype='lx', reverse=True, unit=
 
 def strToUnitExponentNum(expr):
     # permits trailing data
-    len_buffer = 0
+    len_buffer = 0 # dolžina niza
     if expr[0] == '{':
         str_exp = lxRFindPar(expr, '{', '}', True)
-        # TODO: še floate (tud ulomke)
         exp, _ = strToUnitExponentNum(str_exp)
-        len_buffer = 3 + len(str_exp)
+        len_buffer = 3 + len(str_exp) # len(^{}) == 3
     else:
-        try:
+        try: # decimalni / celi eksponent
             exp = float(expr)
-        except:
+        except: # racionalni eksponent
             if len(expr) >= 7 and '\\frac' in expr:
                 strNumer = lxRFindPar(expr, '{', '}', True)
                 strDenom = lxRFindPar(expr[len(strNumer) + 7:], '{', '}', True)
@@ -980,52 +1192,121 @@ def strToUnitExponentNum(expr):
                 
     return exp, len_buffer
 
-def strToUnit(expr):
-    # dela za 1. potence brez ulomkov
-    _, dictUnitsComposite, dictUnitsLen = getUnits()
+# def strToUnit(expr): # stara koda - vse v 1 funkciji
+#     print(strToUnitDictBase(expr))
+
+#     if type(expr) != str:
+#         raise ValueError(f'strToUnit converts {str}, not {type(expr)}')
+    
+#     _, dictUnitsComposite, dictUnitsLen = getUnits() # sestavljene enote in dolžine vseh enot
+
+#     if len(expr) >= 5 and expr[:5] == '\\frac': # ulomek računa rekurzivno
+#         strNumer = lxRFindPar(expr, '{', '}', True)
+#         strDenom = lxRFindPar(expr[len(strNumer) + 7:], '{', '}', True)
+#         unitNumer = strToUnit(strNumer)
+#         unitDenom = strToUnit(strDenom)
+#         return unitNumer - unitDenom
+    
+#     unit = Nu_unit()
+#     str_r = expr[:] # celotni niz enote
+#     str_r_last = str_r[:]
+#     while len(str_r) > 0:
+#         if str_r == '1': # trivialna enota
+#             str_r = ''
+#         else:
+#             for length, setUnits in dictUnitsLen.items(): # dolžina enote in množica enot (nizov) te dolžine
+#                 str_unit = str_r[:length] # niz enote do iskane dolžine
+#                 exp = 1.0
+#                 if len(str_r) >= length and str_unit in setUnits: # če niz ni prekratek in je enota
+#                     # zaznavanje eksponentov
+#                     len_buffer = 0 # toliko znakov naprej je nova enota
+#                     if len(str_r) >= length + 2 and str_r[length] == '^': # zaznan eksponent
+#                         exp, len_buffer = strToUnitExponentNum(str_r[length + 1:])
+#                     if str_unit in dictUnitsComposite.keys(): # enota je sestavljena
+#                         dictUnitComposite = dictUnitsComposite[str_unit] # iz katerih enot je sestavljena
+#                         for str_unit_base in dictUnitComposite:
+#                             unit.addUnit(str_unit_base, exp * dictUnitComposite[str_unit_base]) # doda te osnovne enote
+#                     else:
+#                         unit.addUnit(str_unit, exp)
+#                     str_r = str_r[length + len_buffer:] # na levi odrezana pravkar dodana enota (z eksponentom)
+#                     break # v nizu nastopa samo 1 enota iste vrste (1 podniz)
+#             if str_r_last == str_r:
+#                 raise ValueError(f'Invalid unit: [{expr}], define it in [conf.py]')
+#             str_r_last = str_r[:]
+#     return unit
+
+def strToUnitDictBoth(expr):
+    # niz pretvori v slovar enot, ki jih vsebuje (osnovne in sestavljene) in je oblike {'enota': eksponent, ...}
     if type(expr) != str:
         raise ValueError(f'strToUnit converts {str}, not {type(expr)}')
-    if len(expr) >= 5 and expr[:5] == '\\frac':
+    
+    _, _, dictUnitsLen = getUnits() # sestavljene enote in dolžine vseh enot
+
+    if len(expr) >= 5 and expr[:5] == '\\frac': # ulomek računa rekurzivno
         strNumer = lxRFindPar(expr, '{', '}', True)
         strDenom = lxRFindPar(expr[len(strNumer) + 7:], '{', '}', True)
-        unitNumer = strToUnit(strNumer)
-        unitDenom = strToUnit(strDenom)
-        return unitNumer - unitDenom
-    unit = Nu_unit()
-    str_r = expr[:]
+        dictNumer = strToUnitDictBoth(strNumer)
+        dictDenom = strToUnitDictBoth(strDenom)
+        dictReturn = dictNumer
+        for str_unit, exp in dictDenom.items():
+            dictReturn[str_unit] = dictReturn.get(str_unit, 0) - exp # - zaradi deljenja
+        return dictReturn
+    
+    dictReturn = {} # končni slovar
+    str_r = expr[:] # celotni niz enote
     str_r_last = str_r[:]
     while len(str_r) > 0:
-        if str_r == '1':
+        if str_r == '1': # trivialna enota
             str_r = ''
         else:
-            for length, setUnits in dictUnitsLen.items():
-                str_unit = str_r[:length]
-                exp = 1.0
-                # printcommented(units[length])
-                if len(str_r) >= length and str_unit in setUnits:
-                    len_buffer = 0
-                    if len(str_r) >= length + 2 and str_r[length] == '^':
+            for length, setUnits in dictUnitsLen.items(): # dolžina enote in množica enot (nizov) te dolžine
+                str_unit = str_r[:length] # niz enote do iskane dolžine
+                exp = 1.0 # potenca enote - implicitna je 1
+                if len(str_r) >= length and str_unit in setUnits: # če niz ni prekratek in je enota
+                    # zaznavanje eksponentov
+                    len_buffer = 0 # toliko znakov naprej je nova enota
+                    if len(str_r) >= length + 2 and str_r[length] == '^': # zaznan eksponent
                         exp, len_buffer = strToUnitExponentNum(str_r[length + 1:])
-                    if str_unit in dictUnitsComposite.keys():
-                        dictUnitComposite = dictUnitsComposite[str_unit]
-                        for str_unit_base in dictUnitComposite:
-                            unit.addUnit(str_unit_base, exp * dictUnitComposite[str_unit_base])
-                    else:
-                        unit.addUnit(str_unit, exp)
-                    str_r = str_r[length + len_buffer:]
-                    break
+                    dictReturn[str_unit] = dictReturn.get(str_unit, 0) + exp
+                    str_r = str_r[length + len_buffer:] # na levi odrezana pravkar dodana enota (z eksponentom)
+                    break # v nizu nastopa samo 1 enota iste vrste (1 podniz)
             if str_r_last == str_r:
-                raise ValueError(f'Invalid unit: [{expr}]')
+                raise ValueError(f'Invalid unit: [{expr}], define it in [conf.py]')
             str_r_last = str_r[:]
-    return unit
+    
+    return dictReturn
+
+def strToUnitDictBase(expr):
+    # niz pretvori v slovar osnovnih enot, ki jih vsebuje in je oblike {'enota': eksponent, ...}
+    dict_units_both = strToUnitDictBoth(expr)
+
+    _, dictUnitsComposite, _ = getUnits() # sestavljene enote in dolžine vseh enot
+
+    dictReturn = {} # končni slovar
+    for str_unit, exp in dict_units_both.items():
+        if str_unit in dictUnitsComposite.keys(): # enota je sestavljena
+            dictUnitComposite = dictUnitsComposite[str_unit] # iz katerih enot je sestavljena
+            for str_unit_base, exp_base in dictUnitComposite.items():
+                if str_unit_base != None: # prava enota
+                    dictReturn[str_unit_base] = dictReturn.get(str_unit_base, 0) + exp_base * exp # doda te osnovne enote
+                else: # None
+                    dictReturn[None] = dictReturn.get(None, 1) * (exp_base ** exp)
+        else: # enota je osnovna
+            dictReturn[str_unit] = dictReturn.get(str_unit, 0) + exp
+    
+    return dictReturn
+
+def strToUnit(expr):
+    unitDictBase = strToUnitDictBase(expr)
+    return Nu_unit(unitDictBase)
 
 def dictStrToDictStack(dic, dattype='lx', reverse=False):
     # converts values of Dictionary from string to stack, see strToStack()
-    # DeprecationWarning - idk zakva j blo to kle k build() kliče
+    # DeprecationWarning - idk zakuga j blo to kle k build() kliče
     eqs = {}
     eqs['\\pi'] = (Ps([Nu(np.pi)]), set())
     eqs['e'] = (Ps([Nu(np.e)]), set())
-    eqs['g'] = (Ps([Nu(9.81, 0.005, unit=Nu_unit({'m':1, 's':-2}))]), set())
+    # eqs['g'] = (Ps([Nu(9.81, 0.005, unit=Nu_unit({'m':1, 's':-2}))]), set())
     # eqs['c'] = (Ps([Nu(299792458, 1)]), set())
     bErrorBSInVarSet = False
     for key in dic:
@@ -1047,12 +1328,11 @@ def dictStrToDictStack(dic, dattype='lx', reverse=False):
     
     if config['debugPrintStack']:
         for key in eqs:
-            var = eqs[key][0].peek()
-            var += 0
-            print(f'{key}\t\t{var.val}\t\t+-{var.unc}\t\t{eqs[key][1]}')
-            # printcommented(f'DEBUG1:\t{key}')
-            # printcommented(f'DEBUG2:\t{eqs[key][0].peek().unit}')
-            # printcommented(f'DEBUG3:\t{eqs[key][1]}')
+            var = eqs[key][0]
+            print(f'{key}\t\t{var}')
+            # var = eqs[key][0].peek()
+            # var += 0
+            # print(f'{key}\t\t{var.val}\t\t+-{var.unc}\t\t{eqs[key][1]}')
     
     # error detection
     if bErrorBSInVarSet:
@@ -1062,20 +1342,7 @@ def dictStrToDictStack(dic, dattype='lx', reverse=False):
 
 def stackDictGet(filename, dattype='e_lx', encod='utf-8', reverse=False):
     # returns Praktikal PS Dictionary
-    DeprecationWarning
-    if dattype[:2] != 'e_':
-        raise TypeError(f'Unsupported Data Type: {dattype}')
-    if '.' in filename:
-        filen = filename
-    else:
-        filen = filename + fExtDef
-    dictEqsRaw = dataGet(filen, dattype, encod)
-    if dattype[2:4] in ['ps', 'lx']:
-        # praktikal PostScript or LaTeX string
-        (a, aDebug) = dictStrToDictStack(dictEqsRaw, dattype[2:4], reverse)
-        # printcommented('dddd\t', a)
-        return a, aDebug
-    raise TypeError(f'Unsupported Data Type: {dattype}')
+    raise NotImplementedError('Odstranjeno')
 
 def resultGet(filen, dattype='e_lx', encod='utf-8'):
     DeprecationWarning
@@ -1156,8 +1423,18 @@ def buildFunc(flInRaw, flOutRaw):
         except:
             ...
 
+    def comment_cleanup(arr_ctxt):
+        return_arr_ctxt = []
+        for typ, line in lines_ctxt:
+            line_new = line[:]
+            if typ in ('eqt', 'fig', 'tab'):
+                line_new = line.split('%')[0]
+            return_arr_ctxt.append((typ, line_new))
+        return return_arr_ctxt
+
     # get file - categorised text (type-string pairs)
     lines_ctxt = dataGet(flIn, 'c_lx')
+    lines_ctxt = comment_cleanup(lines_ctxt)
     try:
         lines_ctxt[0]
     except:
@@ -1175,7 +1452,6 @@ def buildFunc(flInRaw, flOutRaw):
     for line in lines_eqs:
         line = line.strip('$').replace('\t', '').replace('\\\\', '\\\\\\ ').replace('\\ ', '').replace(' ', '').replace('&', '').rstrip('\\\\')
         # line = line.replace('\t', '').replace('\\\\', '\\\\\\ ').replace('\\ ', '').replace(' ', '').replace('&', '').rstrip('\\\\')
-        # be silly
         key, expr = line.split('=')
         unit = ''
         if '[' in key:
@@ -1223,13 +1499,15 @@ def buildFunc(flInRaw, flOutRaw):
             # raise RecursionError(f'Not all Equations are Solvable:\t{setVarsAll-setVarsIndep}')
     dictEqs.pop('\\pi', None)
     dictEqs.pop('e', None)
-    dictEqs.pop('g', None)
+    # dictEqs.pop('g', None)
     
     # clears output file
     write(None, flOut)
 
     # writes output file from categorised text
+    idxLine = -1
     for typ, line in lines_ctxt:
+        idxLine += 1
         # debug
         if config['debugWriteLineCategory']:
             write(f'% TYPE: [{typ}]', flOut)
@@ -1240,6 +1518,7 @@ def buildFunc(flInRaw, flOutRaw):
             strBegLine = '$$'
             strEndLine = '$$'
             strEqualsSign = '='
+            symDec = config['printNuSymbolDec']
             if '&=&' in line:
                 strBegLine = '\t'
                 strEndLine = '\\\\ '
@@ -1255,9 +1534,16 @@ def buildFunc(flInRaw, flOutRaw):
                 key, str_unit_input = key.split('[')
             exprEval = str(dictEqs[key][0]).lstrip('[').rstrip(']')
 
-            # if config['buildKeepDataImports'] or not (expr.lstrip(' ')[0:2] == '\\$'):
-            if config['buildKeepDataImports'] or not ('\\$' in expr):
-                write(f'{strBegLine + key + strBegLine.replace("$$", "")} = {expr}{strToUnit(str_unit_input)}{strEqualsSign} {exprEval + strEndLine}', flOut)
+            unit = strToUnit(str_unit_input)
+            # print(unit.dic, unit)
+            str_unit = Nu_unit.dictToStrUnit(strToUnitDictBoth(str_unit_input))
+
+            if (config['buildKeepDataImports'] or not ('\\$' in expr)) and (config['buildKeepDataGenerators'] or not ('mathbb' in expr)):
+                expr_ = expr.replace('.', symDec)
+                if config['buildKeepCalculatedEquations']: # poleg enačb dopiše še rezultate
+                    write(f'{strBegLine + key + strBegLine.replace("$$", "")} = {expr_}{str_unit}{strEqualsSign} {exprEval + strEndLine}', flOut)
+                else: # samo enačbe
+                    write(f'{strBegLine + key + strBegLine.replace("$$", "")} {strEqualsSign} {expr_}{str_unit} {strEndLine}', flOut)
             # write(f'\t{key}\t={expr}{dictEqs[key][0].peek().unit}&=& {exprEval}\\\\ ', flOut)
             continue
         
@@ -1277,16 +1563,22 @@ def buildFunc(flInRaw, flOutRaw):
             # slcs[-1] = slcs[-1].rstrip('}').rstrip(')')
             # slcs[0] = slcs[0][9:].rstrip(')')
             xySlc = slice(0, None, 1)
-            eBar = False
+            xRange = None
+            yRange = None
+            error = None
             fitPlot = False
             bLegend = False
             figsize = '(6,4)'
+            subplots = ((0,0),)
             strCaptionCustom = ''
             bExtendCaption = True
+            bothScale = ('linear', 'linear')
             nBins = 10
+            bHistLog = False
             bDensity = True
             bStackedHist = False
-            bFillHist = False
+            bFillHist = True
+            col = None
 
             # determine fig type and prepairing data
             if '/' in slcs[0]:
@@ -1294,6 +1586,13 @@ def buildFunc(flInRaw, flOutRaw):
                 plotType = 'o'
                 grid = True
                 y, x = slcs[0].split('/')
+
+                if '\\in' in x:
+                    x, xRangeSt = x.split('\\in')
+                    xRange = tuple(float(f) for f in xRangeSt[1:-1].split(','))
+                if '\\in' in y:
+                    y, yRangeSt = y.split('\\in')
+                    yRange = tuple(float(f) for f in yRangeSt[1:-1].split(','))
 
                 if '\\{' in x:
                     xParent, xChildren = x.split('\\{')
@@ -1322,9 +1621,15 @@ def buildFunc(flInRaw, flOutRaw):
                 raise SyntaxError(f'Invalid figure string: [{line}]')
                             
             # reading parameters
+            setParamNamesDupeCheck = set()
             for param in slcs[1:]:
                 bValidParam = False
                 name, val = param.split('=')
+                if name not in setParamNamesDupeCheck:
+                    setParamNamesDupeCheck.add(name)
+                else:
+                    raise ValueError(f'Duplicated parameter [{name}] in plot {yParent} / {xParent}.')
+
                 if name == 'slc':
                     bValidParam = True
                     xySlcListStr = val[1:-1].split(',')
@@ -1344,14 +1649,45 @@ def buildFunc(flInRaw, flOutRaw):
                     bValidParam = True
                     figsize = val
 
+                if name in ('sub', 'subplots'):
+                    raise NotImplementedError
+                    bValidParam = True
+                    try:
+                        vals = val[1:-1].split(',')
+                        xIdx, yIdx = vals[0::2], vals[1::2]
+                        subplots = tuple((int(xIdx[i][1:]) - 1, int(yIdx[i][:-1]) - 1) for i in range(len(vals) // 2))
+                    except:
+                        raise ValueError(f'Invalid subplot string [{val}]')
+
                 if name in ('type', 'plotType'):
                     bValidParam = True
-                    plotType = val
-
-                if name in ('error', 'errorBar', 'eBar'):
+                    if ',' in val:
+                        plotType = val.lstrip('(').rstrip(')').split(',')
+                    else:
+                        plotType = val.lstrip('(').rstrip(')')
+                
+                if name in ('xscale', 'yscale'):
                     bValidParam = True
-                    if val.lower() == 'true':
-                        eBar = True
+                    if name == 'xscale':
+                        bothScale = val, bothScale[1]
+                    elif name == 'yscale':
+                        bothScale = bothScale[0], val
+                
+                if name in ('xrange', 'yrange', 'xlim', 'ylim'):
+                    bValidParam = True
+                    tup = tuple(float(f) for f in val.lstrip('(').rstrip(')').split(','))
+                    if name in ('xrange', 'xlim'):
+                        xRange = tup
+                    elif name in ('yrange', 'ylim'):
+                        yRange = tup
+
+                if name in ('error', 'err', 'unc', 'uncertainty'):
+                    if val.lower() == 'bar':
+                        bValidParam = True
+                        error = 'bar'
+                    elif val.lower() == 'band':
+                        bValidParam = True
+                        error = 'band'
                 
                 if name == 'fit':
                     bValidParam = True
@@ -1366,6 +1702,10 @@ def buildFunc(flInRaw, flOutRaw):
                 if name == 'nBins':
                     bValidParam = True
                     nBins = int(val)
+                
+                if name == 'log':
+                    bValidParam = True
+                    bHistLog = True
                 
                 if name.lower() in ('dens', 'density', 'pdensity', 'probdensity'):
                     bValidParam = True
@@ -1385,7 +1725,7 @@ def buildFunc(flInRaw, flOutRaw):
                     else:
                         raise ValueError(f'Invalid value for parameter [{name}]: [{val}]')
                 
-                if plotType == 'bar':
+                if plotType in ('bar', 'o'): # drugi, ker je to privzeta vrednost
                     bFillHist = True
                 elif plotType == 'step':
                     bFillHist = False
@@ -1399,6 +1739,24 @@ def buildFunc(flInRaw, flOutRaw):
                         bFillHist = False
                     else:
                         raise ValueError(f'Invalid value for parameter [{name}]: [{val}]')
+                
+                if name in ('col', 'color'):
+                    bValidParam = True
+                    def strToCol(st):
+                        try:
+                            return int(st)
+                        except:
+                            try:
+                                x = float(st)
+                                if 0 <= x <= 1:
+                                    return x
+                                raise ValueError
+                            except:
+                                return st
+                    if ',' in val:
+                        col = ('list', tuple(strToCol(st) for st in val.lstrip('(').rstrip(')').split(',')))
+                    else:
+                        col = ('list', (strToCol(val),))
                 
                 if name in ('leg', 'legend'):
                     bValidParam = True
@@ -1427,11 +1785,13 @@ def buildFunc(flInRaw, flOutRaw):
             if figType == 'lineChart':
                 pTitle = f'plot_{y[0]};{x[0]}'
                 pTitle = pTitle.replace('\\','')
-                pCapt = f'Graf ${y[0]}$ v odvisnosti od ${x[0]}$' * bExtendCaption + strCaptionCustom
-                plot(figType, dictEqs, x, y, figSize=figsize, fl=pTitle, slc=xySlc, plotType=plotType, eBar=eBar, fit=fitPlot, leg=bLegend, grid=grid)
+                xscale, yscale = bothScale
+                pCapt = f'Graf ${y[0]}$ v odvisnosti od ${x[0]}$.' * bExtendCaption + strCaptionCustom
+                plot(figType, dictEqs, x, y, figSize=figsize, subplots=subplots, xRange=xRange, yRange=yRange, xscale=xscale, yscale=yscale, fl=pTitle, slc=xySlc, plotTypes=plotType, error=error, fit=fitPlot, leg=bLegend, grid=grid, col=col)
                 write(f'\\begin{{figure}}[H]\n\t\\begin{{center}}\n\t\t\\includegraphics{{{pTitle}}}\n\t\\caption{{{pCapt}}}\n\t\\label{{fig:{pTitle}}}\n\t\\end{{center}}\n\\end{{figure}}',
                 flOut)
                 continue
+            
             
             if figType == 'histogram':
                 strTitle = ''
@@ -1439,19 +1799,27 @@ def buildFunc(flInRaw, flOutRaw):
                     strTitle += (x_ + ';')
                 pTitle = f'hist_{strTitle[:-1]}'
                 pTitle = pTitle.replace('\\','')
+                xscale, yscale = bothScale
                 pCapt = (bDensity * 'Verjetnostna porazdelitev' + (not bDensity) * 'Število dogodkov' + f' ${strTitle.replace(";", ", ")}$') * bExtendCaption + strCaptionCustom
-                plot(figType, dictEqs, x, None, figSize=figsize, fl=pTitle, slc=xySlc, plotType=plotType, nBins=nBins, bDensity=bDensity, bStackedHist=bStackedHist, bFillHist=bFillHist, fit=fitPlot, leg=bLegend, grid=grid)
+                plot(figType, dictEqs, distr, x, figSize=figsize, subplots=subplots, bHistLog=bHistLog, fl=pTitle, slc=xySlc, plotTypes=plotType, nBins=nBins, bDensity=bDensity, bStackedHist=bStackedHist, bFillHist=bFillHist, fit=fitPlot, leg=bLegend, grid=grid, col=col)
                 write(f'\\begin{{figure}}[H]\n\t\\begin{{center}}\n\t\t\\includegraphics{{{pTitle}}}\n\t\\caption{{{pCapt}}}\n\t\\label{{fig:{pTitle}}}\n\t\\end{{center}}\n\\end{{figure}}',
                 flOut)
                 continue
 
         # table line
         if typ == 'tab':
+            hasBreak = lambda l: l.rstrip(' ').rstrip('\t')[-2:] == '\\\\'
+            typeBef, lineBef = lines_ctxt[idxLine - 1]
+            typeAft, _ = lines_ctxt[idxLine + 1]
+            bBeginTable = typeBef != 'tab' or hasBreak(lineBef)
+            bEndTable = typeAft != 'tab' or hasBreak(line)
+
             line = line.lstrip('\\pkt{tab}').replace(' ', '').replace('$', '').rstrip('\\\\')
             slcs = line.split(';')
             slcs[-1] = slcs[-1][:-1]
             slcs[0] = slcs[0].split('\\&')
             listStrVars = slcs[0]
+            
 
             listVars = []
             numVars = len(listStrVars)
@@ -1463,7 +1831,10 @@ def buildFunc(flInRaw, flOutRaw):
                 #     var = dictEqs[strVar][0].peek()
                 #     var_val, var_unc = var.val[i], var.unc[i * (len(var.unc) != 1)]
                 #     tupVarVals.append(Nu(val=var_val, unc=var_unc, unit=var_unit))
-                str_val, str_unc, decExp, str_unit = strNuFormat(dictEqs[strVar][0].peek(), False)
+                try:
+                    str_val, str_unc, decExp, str_unit = strNuFormat(dictEqs[strVar][0].peek(), False)
+                except:
+                    raise KeyError(f'Table variable [{strVar[0]}] is undefined.')
 
                 vals = [str_val]
                 if '\\begin{bmatrix}' in str_val:
@@ -1491,11 +1862,11 @@ def buildFunc(flInRaw, flOutRaw):
                     raise ValueError(f'Parameter [{param}] is not a valid parameter.')
             
             # printcommented(xQt, yQt)
-            write(f'\\begin{{table}}[H]\n\\centering\n\\begin{{tabular}}{{{"|c"*numVars}|}}\n\\hline', flOut)
+            write(bBeginTable * (f'\\begin{{table}}[H]\n\\centering\n\\begin{{tabular}}{{{"|c"*numVars}|}}\n') + (2 - bBeginTable) * '\\hline', flOut)
             str2write = ''
             for tup in listVars:
                 str_str, _, _, decExp, str_unit = tup
-                str_unit = (str_unit != '') * str_unit + (str_unit == '' and decExp == None) * '/'
+                str_unit = (str_unit != '') * str_unit + (str_unit == '' and decExp == None) * '/' # količine brez enot "imajo" enoto "/"
 
                 str2write += '$' + str_str + ('\\left[' + (decExp != None) * f'\\cdot 10^{{{decExp}}}' + str_unit).replace('\\cdot', '').replace('\\left[\\ ', '\\left[') + '\\right]' + '$  & '
             str2write = str2write[:-2] + '\\\\ \\hline'
@@ -1519,11 +1890,12 @@ def buildFunc(flInRaw, flOutRaw):
                     except:
                         str2write += '  & '
                 str2write = str2write[:-2] + '\\\\'
-                if i - lenVarMax + 1 == 0:
+                if bEndTable and i - lenVarMax + 1 == 0:
                     str2write += ' \\hline'
+                str2write = str2write.replace('.', config['printNuSymbolDec'])
                 write(str2write, flOut)
             tabLabel = ('table:{' + line[0:-1].split(';')[0].replace('\\&', ';') + '}').replace('\\', '')
-            write(f'\\end{{tabular}} \n\\label{{{tabLabel}}}\n\\end{{table}}', flOut)
+            write(bEndTable * f'\\end{{tabular}} \n\\label{{{tabLabel}}}\n\\end{{table}}', flOut)
             # write(f'\\end{{tabular}}\n\\caption{{}} \n\\label{{{tabLabel}}}\n\\end{{table}}', flOut)
             continue
 
