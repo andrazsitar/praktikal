@@ -1,0 +1,109 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[slovene]{babel}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{physics}
+\usepackage{float}
+
+\pdfinfo{
+  /Title (Fizikalni praktikum; Semester N; Primer)
+  /Author (Andraž Sitar)}
+
+\hyphenpenalty=50000
+\newcommand\pkt[1]{\underline{\text{\$ praktikal\_{#1} \$ }}}
+\renewcommand{\vec}{\vb}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\epsilon}{\varepsilon}
+
+\newcommand{\qmarks}[1]{``{#1}''}
+
+\title{Primer poročila}
+\author{Andraž Sitar}
+\date{}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\pagebreak
+
+\section{Uvod}
+V uvodu zapišemo teorijo ter izpeljemo enačbe.
+\pagebreak
+\section{Naloge}
+Opombe in razjasnitve pri meritvah. Začetek in konec vnosa in obdelave podatkov označimo z $\backslash$pkt\{eqsb\} in $\backslash$pkt\{eqse\}
+
+Imena spremenljivk zapišemo na levi (vključno z enotami v oglatih oklepajih), njihova definicija pa na desni strani enačaja. Uvoženih ali generiranih spremenljivk privzeto ni v končni datoteki (nastavitvi \texttt{buildKeepDataImports} in\\ \texttt{buildKeepDataGenerators}).
+\pkt{eqsb}
+\begin{eqnarray*}
+	l_{\textrm{primer}}[m]	&=& (100 \pm 1) \cdot 10^{-9} \\
+	a[m]	&=& (\$tab1[a] \pm 0.1) \cdot 10^{-3} \\
+	r_{1}[m]	&=& \$tab2[r_{1}] \pm 0.001 \\
+	r_{2}[m]	&=& \$tab2[r_{2}] \pm 0.001 \\
+	r_{3}[m]	&=& \$tab2[r_{3}] \pm 0.001 \\
+	a_{1}	&=& 2 \cdot a \\
+	b[s]	&=& \$tab1[b] \pm 0.5 \\
+	N	&=& \mathbb{N}^{12} \cdot 10^{3} \\
+	M	&=& \$tab1[M] \\
+\end{eqnarray*}
+\pkt{eqse}
+Kot vrednost opazimo vektor, ki predstavlja zaporedne meritve, število ob tropičju pa predstavlja število meritev, ki niso prikazane. Izračunanih vrednosti lahko ne prikažemo, če spremenimo nastavitev \texttt{buildKeepCalculatedEquations}.
+\\
+
+Uvožene spremenljivke lahko vidimo v tabeli. Števila izmerkov količin so lahko različna.
+\pkt{tab}{$ l_{\textrm{primer}} \& a \& b \& a_{sest} \& N \& M $}
+
+\pagebreak
+Bolj nazorno je meritve ter izračune prikazati na grafu.
+\pkt{fig}{$a \{ a \& a_{1} \} / b$; error=bar; leg=true; fit=lin; title=-||-,ter,dodaten,opis}
+Grafu odvisnosti spremenljivk lahko spreminjamo nastavitve, nekatere izmed njih so že uporabljene. Večina nastavitev ima podobno ime kot v knjižnici \texttt{matplotlib.pyplot}, seznam parametrov pa najdemo v \texttt{README\_fig.md}.
+
+Slika grafa sistematično dobi ime, zato se nanjo lahko sklicujemo, npr.\ slika \ref{fig:plot_a;b}. Ime slike najdemo v izhodnem dokumentu.
+
+\pagebreak
+Lahko narišemo tudi histogram.
+\pkt{fig}{$\{r_{1} \& r_{2} \& r_{3} \} \sim r$; nBins=20; dens=true; leg=true; type=bar; stacked=true; title=-||-,ter,dodaten,opis}
+
+
+\pagebreak
+Sledijo enačbe, izpeljane v uvodu.
+\pkt{eqsb}
+\begin{eqnarray*}
+	a_{sest}	&=& a \oplus a_{1} \\
+	K_{izm}	&=& \derivative{(a)}{b} \\
+	\\
+	r_{1,avg}	&=& \overline{r_{1}} \\
+	s_{1}	&=& \sigma(r_{1}) \\
+	r_{2,avg}	&=& \overline{r_{2}} \\
+	s_{2}	&=& \sigma(r_{2}) \\
+	r_{3,avg}	&=& \overline{r_{3}} \\
+	s_{3}	&=& \sigma(r_{3}) \\
+\end{eqnarray*}
+\pkt{eqse}
+Desno od izrazov lahko dopišemo še numerične rezultate, da spremenimo nastavitev \texttt{buildKeepCalculatedEquations}. Če tega ne storimo, rezultate lahko predstavimo v tabeli.
+\pkt{tab}{$ r_{1,avg} \& s_{1} $}
+\pkt{tab}{$ r_{2,avg} \& s_{2} $}
+\pkt{tab}{$ r_{3,avg} \& s_{3} $}
+
+Vidimo, da so pri izračunih enote količin ustrezne. Program preveri različne kombinacije enot ter sešteje potence posameznih enot v ulomku (ali produktu) ter izbere tisto, katere vsota potenc je najmanjša. Zato morda izbere neustrezen, krajši zapis enote.
+
+\pagebreak
+Najbolj pogoste sestavljene enote so že definirane, nove lahko definiramo v \\\texttt{printNuCompositeUnits} kot slovarje. Nekaj enot je že definiranih v komentarjih datoteke \texttt{conf.py} iz sistemske mape. Sestavljene enote v tej datoteki imajo prednost pred osnovnimi in privzetimi sestavljenimi. Če nočemo, da program izpiše in bere privzete sestavljene enote, jih lahko redefiniramo kot prazne slovarje. Sestavljene enote je prikladno definirati v lokalni datoteki nastavitev \texttt{conf.py}, v tem primeru je to storjeno za nekaj enot iz elektromagnetizma. Spodaj imamo primer \emph{Ohmovega zakona}.
+\pkt{eqsb}
+\begin{eqnarray*}
+	U[V]	&=& 10 \pm 0.1 \\
+	I[A]	&=& \left( 5 \pm 0.1 \right) \cdot 10^{-3} \\
+	R	&=& \frac{U}{I} \\
+\end{eqnarray*}
+\pkt{eqse}
+Pri napetosti $ U = \pkt{ref}{U} $ in toku $ I = \pkt{ref}{I} $ dobimo upornost $ R = \pkt{ref}{R} $. Opazimo, da je enota upornosti ustrezna.
+
+\pagebreak
+\section{Povzetek}
+V povzetku napišemo kratek povzetek poteka meritev in primerjamo rezultate s kolegi po Svetu. Pri tem je se je dobro poslužiti sklicev na izračunane vrednosti z oznako \textbackslash{pkt}\{ref\}\{ime spremenljivke\}, npr.\ $K_{izm} = \pkt{ref}{K_{izm}}$. Sledi kratek komentar rezultatov.
+
+Za dano vajo poročilo najlažje napišemo, da začnemo s kopijo arhetipa poročila z mape \texttt{arhetip}.
+
+\end{document}

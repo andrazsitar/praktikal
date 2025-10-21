@@ -1,0 +1,254 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[slovene]{babel}
+\usepackage{xcolor} \pagecolor[HTML]{1E1E1E} \color[HTML]{FFFFFF}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{physics}
+\usepackage{float}
+
+\pdfinfo{
+  /Title (Fizikalni praktikum; Semester 1; Težno nihalo)
+  /Author (Ime Priimek)}
+
+\hyphenpenalty=50000
+\newcommand\pkt[1]{\underline{\text{\$ praktikal\_{#1} \$ }}}
+\renewcommand{\vec}{\vb}
+\renewcommand{\phi}{\varphi}
+\renewcommand{\epsilon}{\varepsilon}
+
+\title{Težno nihalo}
+\author{Ime Priimek}
+\date{}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+\pagebreak
+
+\section{Uvod}
+\subsection{Osnovna enačba}
+Skica!
+
+Nihajni čas \emph{matematičnega nihala}, torej točkastega telesa na togi breztežni niti dolžine $l$ v homogenem gravitacijskem polju pospeška $g$ se za majhne kotne odmike glasi
+$$ T = 2\pi \sqrt{\frac{l}{g}} \>. $$
+
+Če enačbo obrnemo, lahko izračunamo težni pospešek
+$$ g = l \left( \frac{2\pi}{T} \right)^2 \>. $$
+
+Ta enačba ni najbolj točna, zato skušamo odpraviti čim več sistematičnih napak.
+
+\subsection{Amplitudni popravek}
+Pri večjih amplitudah $\alpha$ za nihajni čas velja formula
+$$ T = 2\pi \sqrt{\frac{l}{g}} \left( 1 + \left( \frac{1}{2} \right)^2 \left( \sin \left( \frac{\alpha}{2} \right) \right)^{2} + \left( \frac{3}{8} \right)^2 \left( \sin \left( \frac{\alpha}{2} \right) \right)^{4} + \dots \right) \>. $$
+Enačbo obrnemo in izračunamo težni pospešek
+\begin{eqnarray*}
+  g &= l \left( \frac{2\pi}{T} \right)^2 \left( 1 + \left( \frac{1}{2} \right)^2 \left( \sin \left( \frac{\alpha}{2} \right) \right)^{2} + \dots \right)^{2} = \\
+  &= g_0 \left( 1 + \left( \frac{1}{2} \right)^2 \left( \sin \left( \frac{\alpha}{2} \right) \right)^{2} + \dots \right)^{2} \approx \\
+  &\approx g_0 \left( 1 + \frac{1}{2} \left( \sin \left( \frac{\alpha}{2} \right) \right)^{2} \right) \>,
+\end{eqnarray*}
+kjer smo upoštevali Taylorjev razvoj binoma, $g_0$ je pa težni pospešek, ki ga dobimo s prvotno enačbo.
+
+\subsection{Oblikovni popravek}
+Ker nihalo ni matematično, moramo upoštevati porazdelitev mase po nihalu. Za težno nihalo poznamo enačbo
+$$ T = 2\pi \sqrt{\frac{J}{ml_{\textrm{tež}} g}} \>, $$
+kjer je $l_{\textrm{tež}}$ razdalja med osjo nihanja in težiščem. Vztrajnostni moment $J$ krogle na valjasti žici se glasi
+$$ J = m_{k} l^{2} + \frac{2}{5} m_{k} r^2 + \frac{1}{3} m_{\textrm{ž}} l_{\textrm{ž}}^{2} \>, $$
+moment težišča pa
+$$ ml_{\textrm{tež}} = m_{k} l + \frac{1}{2} m_{\textrm{ž}} l_{\textrm{ž}} \>, $$
+kjer sta $m_{k}$ in $m_{\textrm{ž}}$ masi krogle in žice, $r$ polmer krogle, $l_{\textrm{ž}}$ dolžina žice od vpetja do krogle, $l = l_{\textrm{ž}} + r$. Dobimo enačbo
+$$ T = 2\pi \sqrt{ \frac{1}{g} \frac{J}{ml_{\textrm{tež}}}} \approx 2\pi \sqrt{\frac{l}{g} \left( 1 + \frac{2}{5} \left( \frac{r}{l} \right)^{2} - \frac{1}{6} \frac{m_{\textrm{ž}}}{m_{k}} \right) } \>, $$
+ki jo obrnemo in dobimo
+\begin{eqnarray*}
+  g &= l \left( \frac{2\pi}{T} \right)^2 \left( 1 + \frac{2}{5} \left( \frac{r}{l} \right)^{2} - \frac{1}{6} \frac{m_{\textrm{ž}}}{m_{k}} \right) = \\
+  &= g_0 \left( 1 + \frac{2}{5} \left( \frac{r}{l} \right)^{2} - \frac{1}{6} \frac{m_{\textrm{ž}}}{m_{k}} \right)
+\end{eqnarray*}
+
+\subsection{Popravek zaradi vzgona}
+Na telo v tekočini delujeta nasprotujoči si sili teže in vzgona, rezultanta teh je
+$$ F = V \left( \rho_{\textrm{telo}} - \rho_{\textrm{tek}} \right) g = V \rho_{\textrm{telo}} \left( 1 - \frac{\rho_{\textrm{tek}}}{\rho_{\textrm{telo}}} \right) = mg \left( 1 - \frac{\rho_{\textrm{tek}}}{\rho_{\textrm{telo}}} \right) \>. $$
+Pri poskusu zares izmerimo
+$$ g_{0} = \frac{F}{m} = g \left( 1 - \frac{\rho_{\textrm{tek}}}{\rho_{\textrm{telo}}} \right) \>, $$
+zato velja
+$$ g = g_{0} \left( 1 - \frac{\rho_{\textrm{tek}}}{\rho_{\textrm{telo}}} \right)^{-1} \approx g_{0} \left( 1 + \frac{\rho_{\textrm{tek}}}{\rho_{\textrm{telo}}} \right) \>. $$
+
+\subsection{Popravek zaradi dušenja}
+Zaradi dušenja se nihajni čas podaljša in velja
+$$ g = \left( 1 + \left( \frac{\Lambda}{2\pi} \right)^2 \right) g_{0} \>, $$
+kjer je $\Lambda$ logaritem razmerja amplitud zaporednih nihajev, torej
+$$ \Lambda = \ln \frac{\alpha_n}{\alpha_{n+1}} \approx \ln \frac{s_n}{s_{n+1}} \>. $$
+Pri definiciji $\Lambda$ kot konstante predpostavimo linearno dušenje, torej eksponentno pojemanje amplitude. Razmerje dveh zaporednih amplitud težko izračunamo, zato uporabimo razmerje amplitud po več nihajih, namreč
+\begin{gather*}
+  N\Lambda = N \ln \frac{s_n}{s_{n+1}} = \ln \frac{s_{0}}{s_{1}} + \ln \frac{s_{1}}{s_{2}} + \dots + \ln \frac{s_{N-2}}{s_{N-1}} + \ln \frac{s_{N-1}}{s_{N}} = \\
+  = \ln \left( \frac{s_{0}}{s_{1}} \frac{s_{1}}{s_{2}} \dots \frac{s_{N-2}}{s_{N-1}} \frac{s_{N-1}}{s_{N}} \right) = \ln \frac{s_{0}}{s_{N}} \\
+  \Lambda = \frac{1}{N} \ln \frac{s_{0}}{s_{N}} \>.
+\end{gather*}
+
+\subsection{Popravek zaradi strižnih sil $-$ nihanja okoliškega zraka}
+Nihajoča krogla na okoliški zrak deluje s strižnimi silami, ki povzročijo, da del tega zraka niha s kroglo. Kljub temu, da se različni deli zraka gibljejo z različnimi hitrostmi, lahko rečemo, da okrog krogle niha prostornina zraka, enaka $k$-kratniku prostornine krogle. Empirično določimo $k \approx 0,6$.
+
+Ker poleg krogle niha še zrak, se poveča vztrajnostni moment
+$$ \frac{J}{J_{\textrm{krogla}}} = \frac{m}{m_{\textrm{krogla}}} = \frac{V\rho_\textrm{krogla} + kV \rho_{\textrm{zrak}}}{V\rho_\textrm{krogla}} = 1 + k \frac{\rho_{\textrm{zrak}}}{\rho_{\textrm{krogla}}} \>, $$
+na okoliški zrak pa zaradi vzgona efektivno sila teže ne deluje, zato se v enačbi za nihajni čas težnega nihala masa nihala ne spremeni. Ker $g \propto J$, velja
+$$ g = g_{0} \left( 1 + k \frac{\rho_{\textrm{zrak}}}{\rho_{\textrm{krogla}}} \right) $$
+
+\subsection{Enačba s popravki}
+Ko smo za enačbo nihajnega časa matematičnega nihala računali popravke, smo predpostavili, da so neodvisni. Ker so poleg tega vse enačbe popravkov oblike
+$$ g = \left( 1 + \Delta' \right) g_{0} \>, $$
+je skupni popravek produkt teh faktorjev. Ker so ti faktorji majhni, lahko izračunamo približek
+$$ g = g_{0} \left( 1 + \Delta_1 \right) \left( 1 + \Delta_2 \right) \dots \left( 1 + \Delta_N \right) \approx g_{0} \left( 1 + \Delta_1 + \Delta_2 + \dots + \Delta_N \right) \>. $$
+
+Končna enačba se tako glasi
+$$ g = g_{0} \left( 1 + \underbrace{\frac{1}{2} \left( \sin \left( \frac{\alpha}{2} \right) \right)^{2}}_{\Delta_{\textrm{amp}}} + \underbrace{\frac{2}{5} \left( \frac{r}{l} \right)^{2} - \frac{1}{6} \frac{m_{\textrm{ž}}}{m_{k}}}_{\Delta_{\textrm{obl}}} + \underbrace{ \left( 1 + k \right) \frac{\rho_{\textrm{zr}}}{\rho_{\textrm{kr}}}}_{\Delta_{\textrm{vzg}} + \Delta_{\textrm{striž}}} + \underbrace{\left( \frac{\Lambda}{2\pi} \right)^2}_{\Delta_{\textrm{duš}}} \right) $$
+
+\pagebreak
+\section{Naloga, meritve in izračuni}
+Z merjenjem nihajnega časa nihala bom določil težni pospešek z relativno napako največ 1\%. Izmeriti moram
+\begin{itemize}
+  \item nihajne čase
+  \item začetno in končno amplitudo nihala
+  \item dolžino in premer žice
+  \item polmer krogle, preko parametrov $a$ in $h$
+\end{itemize}
+
+% \pkt{eqsb}
+% \begin{eqnarray*}
+%   E[J] &=& 1 \\
+%   u[eV] &=& 1 \\
+%   R[\Omega] &=& 1 \\
+%   % F[\frac{kgm}{s^{2}}] &=& 1 \\
+% \end{eqnarray*}
+% \pkt{eqse}
+% Energija je $E=\pkt{ref}{E}$
+% in $u=\pkt{ref}{u}$
+% ter $R=\pkt{ref}{R}$
+
+% \subsection{Meritev nihajnega časa in izračun $g_{0}$}
+
+\pkt{eqsb}
+\begin{eqnarray*}
+  N &=& 5\mathbb{Z}_{0}^{30} \\
+	t[s] &=& (\$tab1[t] \pm 50) \\
+\end{eqnarray*}
+\pkt{eqse}
+\pkt{tab}{$ N \& t $}\\
+\pagebreak
+
+Nihajni čas nihala sem izmeril, da sem izmeril čase, v katerih nihalo opravi $5$-kratnik nihajev, dokler jih ni opravilo $150$. Nato sem od zadnjih desetih časov odštel prvih deset časov in tako dobil deset časovnih intervalov $\Delta_{t,100}$, ki ustrezajo času $100$ nihajev. Nihajni čas $T$ sem nato izračunal kot povprečno vrednost stotine časa $\Delta_{t,100}$.
+
+\pkt{eqsb}
+\begin{eqnarray*}
+  t_{z} &=& t[2:12] \\
+  t_{k} &=& t[22:] \\
+  \Delta_{t,100} &=& t_{k} - t_{z} \\
+  \Delta_{t} &=& \frac{\Delta_{t,100}}{100} \\
+  T &=& \overline{\Delta_{t}} \\
+\end{eqnarray*}
+\pkt{eqse}
+
+\pkt{tab}{$ t_{z} \& t_{k} \& \Delta_{t,100} \& \Delta_{t} $}
+
+Dobil sem nihajni čas $T = \pkt{ref}{T}$. Za osnovni izračun težnega pospeška potrebujemo še meritev razdalje od osi do središča krogle $l = l_\textrm{ž} + r$.
+
+S krivinomerom sem z dimenzijo $ a $ izmeril $ h $ ter izračunal $ r = \pkt{ref}{r} $.
+\pkt{eqsb}
+\begin{eqnarray*}
+  a[m] &=& \left( 43.9 \pm 0.1 \right) \cdot 10^{-3} \\
+  h[m] &=& \left( 5.37 \pm 0.01 \right) \cdot 10^{-3} \\
+  r &=& \frac{h}{2} + \frac{a^{2}}{6h} \\
+\end{eqnarray*}
+\pkt{eqse}
+
+Izmeril sem še dolžino žice, torej razdaljo od osi do roba krogle $ l_{\textrm{ž}} $ in z njo izračunal $ l = \pkt{ref}{l} $
+\pkt{eqsb}
+\begin{eqnarray*}
+  l_{\textrm{ž}}[m] &=& \left( 212.7 \pm 0.1 \right) \cdot 10^{-2} \\
+  l &=& l_{\textrm{ž}} + r \\
+  g_{0} &=& l \left( \frac{2\pi}{T} \right)^{2} \\
+\end{eqnarray*}
+\pkt{eqse}
+Dobil sem težni pospešek $ g_{0} = \pkt{ref}{g_{0}} $, za pravega pa potrebujemo še popravke.
+
+\subsection{Izračun popravkov}
+Izmeril sem še premer železne žice $d_{\textrm{ž}}$ ter izračunal njeno prostornino $V_{\textrm{ž}}$ s formulo za valj. Izračunal sem še prostornino krogle $V_{k}$
+\pkt{eqsb}
+\begin{eqnarray*}
+	d_{\textrm{ž}}[m] &=& \left( 2 \pm 0.5 \right) \cdot 10^{-3} \\
+  V_{\textrm{ž}} &=& \pi \left( \frac{d_{\textrm{ž}}}{2} \right)^{2} l_{\textrm{ž}} \\
+  V_{k} &=& \frac{4\pi}{3} r^{3} \\
+\end{eqnarray*}
+\pkt{eqse}
+Dobil sem $ V_{\textrm{ž}} = \pkt{ref}{V_{\textrm{ž}}} $ in $ V_{k} = \pkt{ref}{V_{k}} $. Ker sta oba predmeta železna, je razmerje njunih mas enako razmerju njunih prostornin.
+
+Izmeril sem začetni $s_{0}$ in končni odmik $s_{150}$ in izračunal koeficient $ \Lambda = \pkt{ref}{\Lambda} $. Pri amplitudnem popravku sem uporabil začetni odmik in dobil $\alpha = \pkt{ref}{\alpha}$.
+
+\pkt{eqsb}
+\begin{eqnarray*}
+	s_{0}[m] &=& \left( 90 \pm 2 \right) \cdot 10^{-3} \\
+	s_{150}[m] &=& \left( 86 \pm 3 \right) \cdot 10^{-3} \\
+  \\
+  \Lambda &=& \frac{1}{150} \exp \left( \frac{s_{0}}{s_{150}} \right) \\
+	\alpha &=& \frac{s_{0}}{l_{\textrm{ž}}} \\
+\end{eqnarray*}
+\pkt{eqse}
+
+Zapišemo še podatke za izračun popravkov zaradi vzgona in strižnih sil
+\pkt{eqsb}
+\begin{eqnarray*}
+  k &=& 0.6 \\
+  \rho_{\textrm{zr}}[kgm^{-3}] &=& 1.2 \pm 0.05 \\
+  \rho_{\textrm{kr}}[kgm^{-3}] &=& 7800 \pm 50 \\
+\end{eqnarray*}
+\pkt{eqse}
+
+Sedaj lahko izračunamo vse popravke
+\pkt{eqsb}
+\begin{eqnarray*}
+	\Delta_{\textrm{amp}}	&=& \frac{1}{2} \left( \sin \left( \frac{\alpha}{2} \right) \right)^{2} \\
+	\Delta_{\textrm{obl}}	&=& \frac{2}{5} \left( \frac{r}{l} \right)^{2} - \frac{1}{6} \frac{V_{\textrm{ž}}}{V_{k}} \\
+	\Delta_{\textrm{vzg,striž}}	&=& \left( 1 + k \right) \frac{\rho_{\textrm{zr}}}{\rho_{\textrm{kr}}} \\
+  \Delta_{\textrm{duš}} &=& \left( \frac{\Lambda}{2\pi} \right)^{2} \\
+\end{eqnarray*}
+\pkt{eqse}
+Dobimo popravke
+\pkt{tab}{$ \Delta_{\textrm{amp}} \& \Delta_{\textrm{obl}} \& \Delta_{\textrm{vzg,striž}} \& \Delta_{\textrm{duš}} $}
+Opazimo, da je največji popravek ???, medtem ko bi popravek ??? lahko zanemarili.
+
+Upoštevaje popravke, dobimo težni pospešek
+\pkt{eqsb}
+\begin{eqnarray*}
+	\Delta_{\textrm{skup}} &=& \Delta_{\textrm{amp}} + \Delta_{\textrm{obl}} + \Delta_{\textrm{vzg,striž}} + \Delta_{\textrm{duš}} \\
+  g_{\textrm{izr}} &=& g_{0} \left( 1 + \Delta_{\textrm{skup}} \right)
+\end{eqnarray*}
+\pkt{eqse}
+
+\pagebreak
+\section{Povzetek}
+Pri osnovnem izračunu smo dobili $g_{0} = \pkt{ref}{g_{0}}$, s popravki pa $g_{\textrm{izr}} = \pkt{ref}{g_{\textrm{izr}}}$ in relativni popravek $\Delta = \pkt{ref}{\Delta_{\textrm{skup}}}$. Opazimo, da je rezultat manjši od nazivne vrednosti $ \pkt{ref}{g_{\textrm{naziv}}} $ in, da je vrednost ??? glede na interval negotovosti. Eden izmed možnih razlogov za odstopanje je, da smo zanemarili vrtenje Zemlje, saj smo namesto težnostnega merili pospešek $g - a_{\textrm{rot}}$.
+
+\subsection{Rotacijski popravek}
+Da namesto efektivnega dobimo pravi težnostni pospešek, moramo prišteti še rotacijski pospešek.
+\pkt{eqsb}
+\begin{eqnarray*}
+	R_{\textrm{Zem}}[m] &=& \left( 6370 \pm 5 \right) \cdot 10^{3} \\
+  t_{\textrm{dan}}[s] &=& \left( \left( 24 \cdot 3600 \right) \pm 0.5 \right) \\
+  \omega_{\textrm{Zem}} &=& \frac{2\pi}{t_{\textrm{dan}}} \\
+  a_{\textrm{rot}}  &=& \omega_{\textrm{Zem}}^{2} R_{\textrm{Zem}} \\
+\end{eqnarray*}
+\pkt{eqse}
+Dobimo $a_{\textrm{rot}} = \pkt{ref}{a_{\textrm{rot}}}$. Popravek je glede na težnostni pospešek majhen, moramo pa upoštevati, da $\vb a_{\textrm{rot}}$ kaže stran od osi vrtenja, težnostni pospešek $\vb g$ pa radialno proti središču Zemlje. Ker je rotacijski pospešek majhen, lahko predpostavimo, da imata pravi in efektivni težnostni pospešek enako smer, razliko njunih amplitud pa predstavlja projekcija rotacijskega pospeška nanju. Upoštevamo, da Ljubljana leži na $ 46,\!0^{\circ}$ geografske širine.
+\pkt{eqsb}
+\begin{eqnarray*}
+	g_{\textrm{naziv}}[ms^{-2}]  &=& 9.805 \pm 0.001 \\
+  \varphi &=& \frac{\pi}{180} \left( 46.0 \pm 0.1 \right) \\
+  a_{\textrm{rot,proj}} &=& a_{\textrm{rot}} \cos\left( \varphi \right) \\
+  g_{\textrm{izr}}' &=& g_{\textrm{izr}} + a_{\textrm{rot,proj}} \\
+  \\
+  \Delta_{g,\textrm{rel}} &=& \textrm{val} \left( \frac{\abs{g_{\textrm{izr}}' - g_{\textrm{naziv}}}}{g_{\textrm{naziv}}} \right) \\
+\end{eqnarray*}
+\pkt{eqse}
+Rotacijski popravek znaša $a_{\textrm{rot,proj}} = \pkt{ref}{a_{\textrm{rot,proj}}}$, nov rezultat se pa glasi $ g_{\textrm{izr}}' = \pkt{ref}{g_{\textrm{izr}}'} $. Opazimo, da je tedaj odstopanje vrednosti znotraj intervala negotovosti, relativno odstopanje znaša $ \pkt{ref}{\Delta_{g,\textrm{rel}}} $, kar je ??? glede na relativno toleranco $10^{-3}$.
+
+\end{document}
