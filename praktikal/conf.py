@@ -5,7 +5,7 @@ config = {
     'fileExtensionDefTable': '.txt',
 
     # render style
-    'renMaster': 'dark',
+    'renMaster': 'light',
         # options are: 'custom'; 'dark'; 'light'
     'renMasterCustomMode': {
         'renColCont': '#000000',
@@ -24,66 +24,95 @@ config = {
     'buildPrintLogTraceback': True,
     'buildPrintLogTimestamp': True,
     'buildUseAux': True,
-    'buildPerInterval': 1,
-    'buildKeepComments': False,
-    'buildKeepDataImports': False,
-    'buildKeepFileStyle': False,
+    'buildPerInterval': 0.2, # časovni interval [s] preverjanja, če se je dokument spremenil
+    'buildKeepComments': False, # ne prepiše komentiranih vrstic
+    'buildKeepCalculatedEquations': False, # pri enačbah zapiše izračunane vrednosti
+    'buildKeepDataImports': False, # zapiše podatke, ko so uvoženi
+    'buildKeepDataGenerators': False, # zapiše podatke, ko so generirani, npr. z ukazom \mathbb{N}^{9}
+    'buildKeepCommentedEquations': False,
+    'buildKeepFileStyle': False, # ne upošteva v 'renMaster' definiranega načina prikaza
 
     # Nu() print config
-    'printNuSigFigsDependentOnUnc': True,
-    'printNuSigFigs': 1,
-    'printNuDimLim': 2,
-    'printNuExpThreshold': 3,
-    'printNuExpStep': 3,
-    'printNuRemoveLeading0': False,
-    'printNuSymbolDec': ',',
+    'printNuSigFigsDependentOnUnc': True, # število decimalnih mest nazivne vrednosti je odvisno od negotovosti
+    'printNuSigFigs': 2, # število decimalnih mest pri negotovosti
+    'printNuDimLim': 2, # število prikazanih meritev v izračunu
+    'printNuExpThreshold': 3, # prag za eksponentni zapis števila
+    'printNuExpStep': 3, # korak pri eksponentnem zapisu, običajno 1 ali 3
+    'printNuRemoveLeading0': False, # odstranitev ničle pri številih 0,XYZ
+    'printNuSymbolDec': ',\\!', # decimalni simbol
+    'printNuThresholdSeperator3Digit': 5, # prag števila števk za rabo simbola med troštevkovnimi nizi
+    'printNuSymbolSeperator3Digit': '\\>', # simbol med troštevkovnimi nizi
+    'printNuSymbolSeperatorUnit': '\\>', # simbol predsledka med numerično vrednostjo in enoto
     'printNuSymbolNaN': '\\nexists',
-    'printNuFloatToleranceDigits' : 6,
+    'printNuFloatToleranceDigits' : 6, # odstopanja, manjša od te tolerance bodo popravljena; mora biti manjše od numerične napake
     'printNuCompositeUnits': {
-        '\Omega': {
-                'kg': 1,
-                'm': 2,
-                's': -3,
-                'A': -2,
-        },
+        # '\Omega': {
+        #         'kg': 1,
+        #         'm': 2,
+        #         's': -3,
+        #         'A': -2,
+        # },
+        # 'T': {
+        #         'kg': 1,
+        #         's': -2,
+        #         'A': -1,
+        # },
         # 'F': {
         #         'kg': -1,
         #         'm': -2,
         #         's': 4,
         #         'A': 2
         # },
-        'V': {
-                'kg': 1,
-                'm': 2,
-                's': -3,
-                'A': -1,
-            },
-        # 'Vs': {
+        # 'H': {
+        #         'kg': 1,
+        #         'm': 2,
+        #         's': -2,
+        #         'A': -2
+        # },
+        # 'V': {
+        #         'kg': 1,
+        #         'm': 2,
+        #         's': -3,
+        #         'A': -1,
+        #     },
+        # 'Vs': {   # če Praktikal napiše neustrezno enoto
         #         'kg': 1,
         #         'm': 2,
         #         's': -2,
         #         'A': -1,
         #     },
-        # 'Nm': {
+        # 'Nm': {   # če Praktikal napiše neustrezno enoto
         #     'kg': 1,
         #     'm': 2,
         #     's': -2
         # },
-        # 'J': {},
-        # 'W': {},
+        # 'N': {}, # onemogočenje enote
+        # 'J': {}, # onemogočenje enote
+        # 'W': {}, # onemogočenje enote
+        # 'eV': {
+		# 	None: 1.602177e-19,
+        #     'kg': 1,
+        #     'm': 2,
+        #     's': -2
+        # },
+        # '{^\circ}C': {
+        #     'K': 1,
+        # },
     },
     'printNuCompositeUnitIfExactMatch': False,
 
     # LaTeX interpreter config
     'latexInterpFuncAngle': 's.avg',
     'latexInterpFuncOverline': 's.avg',
-    'latexInterpFuncSigma': 's.sdv',
+    'latexInterpFuncSigma': {1: 's.sdv', 2:'s.sdvW'},
     'latexInterpFuncOplus': 'v.cnc',
     'latexInterpSymbolDitto': '-||-',
 
     # matplotlib config
     'pltUseTeX': True,
     'pltSkipPlotting': False,
+    'pltFitStyle': '--',
+    'pltScaleScatter': False, # če je veliko meritev, zmanjša odčitke
 
     #DEBUG
     'debugRememberStack': True,
