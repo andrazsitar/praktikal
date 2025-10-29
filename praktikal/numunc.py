@@ -372,7 +372,6 @@ def powCertain(a, b):
 def ln(a_):
     # if type(self) != Nu: self = Nu(self)
     a = copy.deepcopy(a_)
-    a = Nu(1)
     if not a.unitless():
         RuntimeWarning(f'Logaritem enot [{a.unit()}] dopuščen samo pri prilagajanju')
     a.fxt(True)
@@ -852,6 +851,7 @@ class Nu:
     
     def __pow__(self, oth):
         if type(oth) != Nu: oth = Nu(oth)
+        
         if not oth.unitless():
             raise ValueError('Exponent needs to be unitless')
         
