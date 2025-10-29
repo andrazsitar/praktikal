@@ -46,7 +46,7 @@ config = {
     'printNuSymbolNaN': '\\nexists',
     'printNuFloatToleranceDigits' : 6, # odstopanja, manjša od te tolerance bodo popravljena; mora biti manjše od numerične napake
     'printNuCompositeUnits': {
-        # '\Omega': {
+        # '\\Omega': {
         #         'kg': 1,
         #         'm': 2,
         #         's': -3,

@@ -78,8 +78,9 @@ def arrConstant(arr):
         if np.size(an) != 0 and np.max(np.abs(suspZeroes)) <= suspVal * (10 ** -config['printNuFloatToleranceDigits']):
             return suspVal
 
-def getLeadingExponent(x, intSgFg):
+def getLeadingExponent(x_, intSgFg):
     # vrne desetiški eksponent vodilne števke zaokroženega števila
+    x = np.abs(x_)
     if (float(x) == 0.):
         return 1
     decExpLeading = int(np.floor(np.log10(x))) # desetiški eksponent vodilne števke (pred zaokroževanjem)

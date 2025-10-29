@@ -1,6 +1,7 @@
 
 import numpy as np
 import os
+import platform
 import copy
 import traceback
 import time
@@ -1931,10 +1932,13 @@ def buildFunc(flInRaw, flOutRaw):
 
     if config['buildUseAux']:
         try:
-            # unix / linux
-            # os.system(f'cp {flOut} {flOutFinal}')
-            # windows
-            os.system(f'copy {flOut} {flOutFinal}')
+            strSys = platform.system()
+            if strSys == 'Linux':
+                os.system(f'cp {flOut} {flOutFinal}')
+            elif strSys == 'Windows':
+                os.system(f'copy {flOut} {flOutFinal}')
+            else:
+                raise NotImplementedError(f'OS [{strSys}] not supported.')
         except:
             raise SystemError('Unable to copy aux file.')
         
