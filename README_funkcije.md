@@ -1,4 +1,4 @@
-**Primer dokumenta se nahaja v mapi demo.**
+**Primeri dokumenta se nahajajo v mapah arhetip (osnoven delujoč dokument) in demo (primeri funkcij praktikala ter primer poročila).**
 
 Naj bosta `x`,`y` izraza.
 

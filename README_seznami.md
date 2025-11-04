@@ -1,4 +1,4 @@
-**Primer dokumenta se nahaja v mapi demo.**
+**Primeri dokumenta se nahajajo v mapah arhetip (osnoven delujoč dokument) in demo (primeri funkcij praktikala ter primer poročila).**
 
 Podatke lahko uvozimo iz besedilnega dokumenta, v katerem se v zgornji vrstici oziroma levem stolpcu imena spremenljivk, pod oziroma desno od njih pa številčne vrednosti v eni izmed standardnih oblik zapisa realnih števil. Podatki morajo biti urejeni, da **velikost stolpcev pada** od leve proti desni oziroma **velikost vrstic pada** od zgoraj navzdol.
 

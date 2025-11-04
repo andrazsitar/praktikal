@@ -1,4 +1,4 @@
-**Primer dokumenta se nahaja v mapi demo.**
+**Primeri dokumenta se nahajajo v mapah arhetip (osnoven delujoč dokument) in demo (primeri funkcij praktikala ter primer poročila).**
 
 # Tabele:
 Tabelo ustvarimo z oznako (v svoji vrstici) `\pkt{tab}{niz_spremenljivk}`. Namesto `niz_spremenljivk` moramo napisati imena vseh spremenljivk, katere hočemo prikazati v tabeli, ločimo jih pa z `\&`. Celoten niz naj se nahaja znotraj enojnih `$`-oklepajev.
