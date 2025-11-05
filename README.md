@@ -1,10 +1,10 @@
 **Primeri dokumenta se nahajajo v mapah arhetip (osnoven delujoč dokument) in demo (primeri funkcij praktikala ter primer poročila).**
 
-Mapa praktikal se mora nahajati v mapi z ostalimi paketi (kot npr. numpy, matplotlib, ...), torej imenik oblike
-...\Python\Python314\Lib\site-packages\
-...python3/dist-packages/
+Mapa praktikal se mora nahajati v mapi z ostalimi paketi (kot npr. numpy, matplotlib, ...).
+V operacijskem sistemu Windows naslov najdemo z ukazom "python -m site --user-site" in dobimo naslov, podoben ...\Python\Python314\Lib\site-packages\
 
-ali druge, podobne oblike.
+V operacijskem sistemu linux pa mapo najdemo z ukazom "whereis python*", kjer * predstavlja ustrezno verzijo. V tej mapi bi se morala nahajati mapa site-packages oz. dist-packages. Alternativen ukaz je 'python3 -c "import sys; print('\n'.join(sys.path))"'. V obeh primerih je naslov podoben naslovu
+/usr/lib/python3/dist-packages/ ali /usr/lib/python3/site-packages/
 
 Za obdelavo dokumenta ustvarimo novo mapo (kjerkoli), v njej pa .py datoteko z 2 vrsticama:
 ```py
